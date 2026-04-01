@@ -204,7 +204,15 @@ function SubcategoryChooser({
   );
 }
 
-function GuidePanel({ guide, activeTabSlug }: { guide: GuideDetail; activeTabSlug: string }) {
+function GuidePanel({
+  guide,
+  activeTabSlug,
+  compactSingleSection = false,
+}: {
+  guide: GuideDetail;
+  activeTabSlug: string;
+  compactSingleSection?: boolean;
+}) {
   const activeTab = guide.tabs.find((tab) => tab.slug === activeTabSlug) ?? guide.tabs[0];
 
   if (!activeTab) {
@@ -222,23 +230,32 @@ function GuidePanel({ guide, activeTabSlug }: { guide: GuideDetail; activeTabSlu
 
       {activeTab.sections.length > 0 ? (
         <div className="classification-list">
-          {activeTab.sections.map((section) => (
-            <article key={section.id} className="classification-card">
-              <img
-                className="classification-card__image"
-                src={section.imageUrl}
-                alt={section.imageAlt}
-                loading="lazy"
-              />
-              <h3 className="classification-card__title">{section.title}</h3>
-              <p className="classification-card__subtitle">{section.subtitle}</p>
+          {activeTab.sections.map((section) => {
+            const hideSectionHeader = compactSingleSection && activeTab.sections.length === 1;
+
+            return (
+            <article
+              key={section.id}
+              className={hideSectionHeader ? "classification-card classification-card--plain" : "classification-card"}
+            >
+              {!hideSectionHeader ? (
+                <img
+                  className="classification-card__image"
+                  src={section.imageUrl}
+                  alt={section.imageAlt}
+                  loading="lazy"
+                />
+              ) : null}
+              {!hideSectionHeader ? <h3 className="classification-card__title">{section.title}</h3> : null}
+              {!hideSectionHeader ? <p className="classification-card__subtitle">{section.subtitle}</p> : null}
               {section.paragraphs.map((paragraph) => (
                 <p key={paragraph} className="classification-card__text">
                   {paragraph}
                 </p>
               ))}
             </article>
-          ))}
+            );
+          })}
         </div>
       ) : null}
 
@@ -334,16 +351,9 @@ export default function CategoryPage() {
   const supportsSubcategories = category?.slug === "destilados" || category?.slug === "aperitivos";
   const detailImageUrl = selectedSubcategorySection?.imageUrl ?? category?.imageUrl ?? "";
   const detailImageAlt = selectedSubcategorySection?.imageAlt ?? category?.imageAlt ?? "";
-  const detailEyebrow =
-    supportsSubcategories && selectedSubcategory ? category?.title ?? "Ficha" : "Ficha";
-  const detailTitle =
-    supportsSubcategories && selectedSubcategory
-      ? selectedSubcategory.label
-      : category?.title ?? "";
-  const detailSummary =
-    supportsSubcategories && selectedSubcategory
-      ? selectedSubcategorySection?.subtitle ?? selectedSubcategory.tab.noteContent ?? category?.summary ?? ""
-      : category?.summary ?? "";
+  const detailEyebrow = "Ficha";
+  const detailTitle = category?.title ?? "";
+  const detailSummary = category?.summary ?? "";
   const tabsToRender = useMemo(() => {
     if (!guide) {
       return [];
@@ -472,6 +482,7 @@ export default function CategoryPage() {
                 tabs: tabsToRender,
               }}
               activeTabSlug={activeTabSlug}
+              compactSingleSection={Boolean(selectedSubcategory)}
             />
           ) : supportsSubcategories ? (
             <p className="status-message status-message--error">
