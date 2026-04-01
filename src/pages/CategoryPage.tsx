@@ -487,6 +487,7 @@ export default function CategoryPage() {
   const detailEyebrow = "Ficha";
   const detailTitle = category?.title ?? "";
   const detailSummary = category?.summary ?? "";
+  const showDetailImage = Boolean(detailImageUrl) && !(category?.slug === "destilados" && Boolean(subId));
   const tabsToRender = useMemo(() => {
     if (!guide) {
       return [];
@@ -546,7 +547,7 @@ export default function CategoryPage() {
       <Link to="/" className="detail__back">
         ← Todas las categorías
       </Link>
-      <img className="detail__image" src={detailImageUrl} alt={detailImageAlt} />
+      {showDetailImage ? <img className="detail__image" src={detailImageUrl} alt={detailImageAlt} /> : null}
       <header className="detail__header">
         <p className="hero__eyebrow">{detailEyebrow}</p>
         <h1 className="hero__title detail__title">{detailTitle}</h1>
