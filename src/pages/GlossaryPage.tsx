@@ -3,10 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { GlossaryText, useGlossary } from "../glossary";
 
 function toCategoryLabel(slug: string): string {
-  if (slug === "champagne") {
-    return "Espumoso";
-  }
-
   return slug.charAt(0).toUpperCase() + slug.slice(1);
 }
 
@@ -69,7 +65,7 @@ export default function GlossaryPage() {
                     {item.relatedCategories.map((slug, index) => (
                       <span key={slug}>
                         {index > 0 ? ", " : ""}
-                        <Link to={`/categoria/${slug === "champagne" ? "champagne" : slug}`}>
+                        <Link to={`/categoria/${slug}`}>
                           {toCategoryLabel(slug)}
                         </Link>
                       </span>

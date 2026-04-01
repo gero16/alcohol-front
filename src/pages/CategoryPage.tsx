@@ -24,6 +24,10 @@ function isWineSubcategorySourceTabSlug(slug: string): boolean {
   return slug === "estilos";
 }
 
+function getWineSubcategorySourceSections(guide: GuideDetail) {
+  return guide.tabs.filter((tab) => isWineSubcategorySourceTabSlug(tab.slug)).flatMap((tab) => tab.sections);
+}
+
 function isBeerSubcategorySourceTabSlug(slug: string): boolean {
   return slug === "por-color";
 }
@@ -86,27 +90,32 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
   }
 
   if (guide.category.slug === "vino") {
-    return guide.tabs
-      .filter((tab) => isWineSubcategorySourceTabSlug(tab.slug))
-      .flatMap((tab) =>
-        tab.sections.map((section) => ({
-          slug: section.slug,
-          label: section.title.replace(/^\d+\.\s*/, ""),
-          subtitle: section.subtitle,
-          imageUrl: section.imageUrl,
-          imageAlt: section.imageAlt,
-          previewText: section.paragraphs[0] ?? "",
-          tab: {
-            ...tab,
-            id: `${tab.id}-${section.id}`,
-            slug: `${tab.slug}-${section.slug}`,
-            label: section.title.replace(/^\d+\.\s*/, ""),
-            panelTitle: section.title.replace(/^\d+\.\s*/, ""),
-            sections: [section],
-            tables: [],
-          },
-        })),
-      );
+    return getWineSubcategorySourceSections(guide).map((section) => {
+      const sourceTab = guide.tabs.find((tab) => isWineSubcategorySourceTabSlug(tab.slug));
+      const dedicatedTab = guide.tabs.find((tab) => tab.slug === section.slug);
+      const fallbackTab =
+        sourceTab && !dedicatedTab
+          ? {
+              ...sourceTab,
+              id: `${sourceTab.id}-${section.id}`,
+              slug: `${sourceTab.slug}-${section.slug}`,
+              label: section.title.replace(/^\d+\.\s*/, ""),
+              panelTitle: section.title.replace(/^\d+\.\s*/, ""),
+              sections: [section],
+              tables: [],
+            }
+          : null;
+
+      return {
+        slug: section.slug,
+        label: section.title.replace(/^\d+\.\s*/, ""),
+        subtitle: section.subtitle,
+        imageUrl: section.imageUrl,
+        imageAlt: section.imageAlt,
+        previewText: section.paragraphs[0] ?? "",
+        tab: dedicatedTab ?? fallbackTab ?? guide.tabs[0],
+      };
+    });
   }
 
   if (guide.category.slug === "cerveza") {
@@ -164,7 +173,11 @@ function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
   }
 
   if (guide.category.slug === "vino") {
-    return guide.tabs.filter((tab) => !isWineSubcategorySourceTabSlug(tab.slug));
+    const wineSubcategorySlugs = new Set(getWineSubcategorySourceSections(guide).map((section) => section.slug));
+
+    return guide.tabs.filter(
+      (tab) => !isWineSubcategorySourceTabSlug(tab.slug) && !wineSubcategorySlugs.has(tab.slug),
+    );
   }
 
   if (guide.category.slug === "cerveza") {

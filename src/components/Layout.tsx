@@ -158,16 +158,7 @@ export default function Layout() {
                   Inicio
                 </NavLink>
               </li>
-              <li className="nav__item">
-                <NavLink to="/consumo-responsable" className="nav__link">
-                  Consumo responsable
-                </NavLink>
-              </li>
-              <li className="nav__item">
-                <NavLink to="/glosario" className="nav__link">
-                  Glosario
-                </NavLink>
-              </li>
+       
               {categories.map((category) => {
                 const isDistillates = category.slug === "destilados";
                 const isWines = category.slug === "vino";
@@ -227,6 +218,16 @@ export default function Layout() {
                   </li>
                 );
               })}
+              <li className="nav__item">
+                <NavLink to="/glosario" className="nav__link">
+                  Glosario
+                </NavLink>
+              </li>
+              <li className="nav__item">
+                <NavLink to="/consumo-responsable" className="nav__link">
+                  Consumo responsable
+                </NavLink>
+              </li>
             </ul>
           </div>
         ) : null}
