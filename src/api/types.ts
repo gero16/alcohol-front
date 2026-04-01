@@ -138,3 +138,12 @@ export type GlossaryItem = {
   relatedCategories: string[];
   featured?: boolean;
 };
+
+export type GlossaryInput = {
+  slug: string;
+  term: string;
+  shortDefinition: string;
+  details: string[];
+  relatedCategories: string[];
+  featured?: boolean;
+};

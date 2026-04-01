@@ -13,6 +13,12 @@ const adminSections = [
     to: "/admin/guias",
     cta: "Editar guias",
   },
+  {
+    title: "Glosario",
+    text: "Crear, editar y eliminar terminos del glosario y sus detalles.",
+    to: "/admin/glosario",
+    cta: "Administrar glosario",
+  },
 ];
 
 export default function AdminHomePage() {

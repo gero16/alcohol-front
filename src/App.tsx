@@ -9,6 +9,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import AdminHomePage from "./pages/admin/AdminHomePage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminGuidesPage from "./pages/admin/AdminGuidesPage";
+import AdminGlossaryPage from "./pages/admin/AdminGlossaryPage";
 import "./App.css";
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route index element={<AdminHomePage />} />
           <Route path="categorias" element={<AdminCategoriesPage />} />
           <Route path="guias" element={<AdminGuidesPage />} />
+          <Route path="glosario" element={<AdminGlossaryPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
         <Route element={<Layout />}>

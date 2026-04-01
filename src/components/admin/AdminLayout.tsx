@@ -4,6 +4,7 @@ const adminLinks = [
   { to: "/admin", label: "Resumen", end: true },
   { to: "/admin/categorias", label: "Categorías" },
   { to: "/admin/guias", label: "Guías" },
+  { to: "/admin/glosario", label: "Glosario" },
 ];
 
 export default function AdminLayout() {

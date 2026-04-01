@@ -2,6 +2,7 @@ import type {
   Category,
   CategoryInput,
   GlossaryItem,
+  GlossaryInput,
   GuideDetail,
   GuideInput,
   GuideSummary,
@@ -82,6 +83,10 @@ export async function getGlossary(): Promise<GlossaryItem[]> {
   return requestJson<GlossaryItem[]>("/glossary");
 }
 
+export async function getGlossaryItemBySlug(slug: string): Promise<GlossaryItem> {
+  return requestJson<GlossaryItem>(`/glossary/${slug}`);
+}
+
 export async function createCategory(payload: CategoryInput): Promise<Category> {
   return requestJson<Category>("/categories", {
     method: "POST",
@@ -106,5 +111,25 @@ export async function saveGuide(categorySlug: string, payload: GuideInput): Prom
   return requestJson<GuideDetail>(`/guides/${categorySlug}`, {
     method: "PUT",
     body: payload,
+  });
+}
+
+export async function createGlossaryItem(payload: GlossaryInput): Promise<GlossaryItem> {
+  return requestJson<GlossaryItem>("/glossary", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateGlossaryItem(currentSlug: string, payload: GlossaryInput): Promise<GlossaryItem> {
+  return requestJson<GlossaryItem>(`/glossary/${currentSlug}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export async function deleteGlossaryItem(slug: string): Promise<void> {
+  await requestJson<void>(`/glossary/${slug}`, {
+    method: "DELETE",
   });
 }
