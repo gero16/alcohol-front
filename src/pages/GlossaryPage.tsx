@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { GlossaryText, useGlossary } from "../glossary";
 
 function toCategoryLabel(slug: string): string {
@@ -11,6 +12,28 @@ function toCategoryLabel(slug: string): string {
 
 export default function GlossaryPage() {
   const { items: terms, loading } = useGlossary();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (loading || !location.hash) {
+      return;
+    }
+
+    const id = decodeURIComponent(location.hash.slice(1));
+
+    requestAnimationFrame(() => {
+      const target = document.getElementById(id);
+
+      if (!target) {
+        return;
+      }
+
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [loading, location.hash, terms.length]);
 
   return (
     <article className="detail">
