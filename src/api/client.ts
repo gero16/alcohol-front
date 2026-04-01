@@ -1,4 +1,11 @@
-import type { Category, CategoryInput, GuideDetail, GuideInput, GuideSummary } from "./types";
+import type {
+  Category,
+  CategoryInput,
+  GlossaryItem,
+  GuideDetail,
+  GuideInput,
+  GuideSummary,
+} from "./types";
 
 const DEFAULT_API_BASE_URL = "https://alcohol-api-qn53.onrender.com";
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/$/, "");
@@ -69,6 +76,10 @@ export async function getGuideByCategorySlug(slug: string): Promise<GuideDetail 
 
 export async function getGuides(): Promise<GuideSummary[]> {
   return requestJson<GuideSummary[]>("/guides");
+}
+
+export async function getGlossary(): Promise<GlossaryItem[]> {
+  return requestJson<GlossaryItem[]>("/glossary");
 }
 
 export async function createCategory(payload: CategoryInput): Promise<Category> {

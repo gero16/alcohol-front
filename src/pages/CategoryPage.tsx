@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { ApiError, getCategoryBySlug, getGuideByCategorySlug } from "../api/client";
 import type { Category, GuideDetail, GuideTable, GuideTableColumn, GuideTableRow } from "../api/types";
+import { GlossaryText } from "../glossary";
 
 function isSpiritGuideTabSlug(slug: string): boolean {
   return slug.endsWith("-guia");
@@ -17,6 +18,18 @@ function toSpiritDisplayLabel(label: string): string {
 
 function isAperitifSubcategorySourceTabSlug(slug: string): boolean {
   return slug === "ejemplos" || slug === "marcas-y-estilos";
+}
+
+function isWineSubcategorySourceTabSlug(slug: string): boolean {
+  return slug === "estilos";
+}
+
+function isBeerSubcategorySourceTabSlug(slug: string): boolean {
+  return slug === "por-color";
+}
+
+function isLiqueurSubcategoryTabSlug(slug: string): boolean {
+  return !["que-son", "elaboracion", "familias", "servicio", "ejemplos"].includes(slug);
 }
 
 type GuideSubcategory = {
@@ -72,6 +85,72 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
       );
   }
 
+  if (guide.category.slug === "vino") {
+    return guide.tabs
+      .filter((tab) => isWineSubcategorySourceTabSlug(tab.slug))
+      .flatMap((tab) =>
+        tab.sections.map((section) => ({
+          slug: section.slug,
+          label: section.title.replace(/^\d+\.\s*/, ""),
+          subtitle: section.subtitle,
+          imageUrl: section.imageUrl,
+          imageAlt: section.imageAlt,
+          previewText: section.paragraphs[0] ?? "",
+          tab: {
+            ...tab,
+            id: `${tab.id}-${section.id}`,
+            slug: `${tab.slug}-${section.slug}`,
+            label: section.title.replace(/^\d+\.\s*/, ""),
+            panelTitle: section.title.replace(/^\d+\.\s*/, ""),
+            sections: [section],
+            tables: [],
+          },
+        })),
+      );
+  }
+
+  if (guide.category.slug === "cerveza") {
+    return guide.tabs
+      .filter((tab) => isBeerSubcategorySourceTabSlug(tab.slug))
+      .flatMap((tab) =>
+        tab.sections.map((section) => ({
+          slug: section.slug,
+          label: section.title,
+          subtitle: section.subtitle,
+          imageUrl: section.imageUrl,
+          imageAlt: section.imageAlt,
+          previewText: section.paragraphs[0] ?? "",
+          tab: {
+            ...tab,
+            id: `${tab.id}-${section.id}`,
+            slug: `${tab.slug}-${section.slug}`,
+            label: section.title,
+            panelTitle: section.title,
+            sections: [section],
+            tables: [],
+          },
+        })),
+      );
+  }
+
+  if (guide.category.slug === "licores") {
+    return guide.tabs
+      .filter((tab) => isLiqueurSubcategoryTabSlug(tab.slug))
+      .map((tab) => {
+        const previewSection = tab.sections[0];
+
+        return {
+          slug: tab.slug,
+          label: tab.label,
+          subtitle: previewSection?.subtitle,
+          imageUrl: previewSection?.imageUrl,
+          imageAlt: previewSection?.imageAlt,
+          previewText: previewSection?.paragraphs[0] ?? tab.noteContent ?? "",
+          tab,
+        };
+      });
+  }
+
   return [];
 }
 
@@ -82,6 +161,18 @@ function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
 
   if (guide.category.slug === "aperitivos") {
     return guide.tabs.filter((tab) => !isAperitifSubcategorySourceTabSlug(tab.slug));
+  }
+
+  if (guide.category.slug === "vino") {
+    return guide.tabs.filter((tab) => !isWineSubcategorySourceTabSlug(tab.slug));
+  }
+
+  if (guide.category.slug === "cerveza") {
+    return guide.tabs.filter((tab) => !isBeerSubcategorySourceTabSlug(tab.slug));
+  }
+
+  if (guide.category.slug === "licores") {
+    return guide.tabs.filter((tab) => !isLiqueurSubcategoryTabSlug(tab.slug));
   }
 
   return guide.tabs;
@@ -109,7 +200,7 @@ function DataTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
             <tr key={row.id}>
               {table.columns.map((column) => (
                 <td key={`${row.id}-${column.key}`} data-label={column.label}>
-                  {getRowValue(row, column)}
+                  <GlossaryText text={getRowValue(row, column)} />
                 </td>
               ))}
             </tr>
@@ -136,11 +227,25 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
               />
             ) : null}
             <h3 className="classification-card__title">{row.term}</h3>
-            {row.description ? <p className="classification-card__text">{row.description}</p> : null}
-            {row.composition ? <p className="classification-card__text">{row.composition}</p> : null}
-            {row.objective ? <p className="classification-card__text">{row.objective}</p> : null}
+            {row.description ? (
+              <p className="classification-card__text">
+                <GlossaryText text={row.description} />
+              </p>
+            ) : null}
+            {row.composition ? (
+              <p className="classification-card__text">
+                <GlossaryText text={row.composition} />
+              </p>
+            ) : null}
+            {row.objective ? (
+              <p className="classification-card__text">
+                <GlossaryText text={row.objective} />
+              </p>
+            ) : null}
             {row.reference ? (
-              <p className="classification-card__reference">{row.reference}</p>
+              <p className="classification-card__reference">
+                <GlossaryText text={row.reference} />
+              </p>
             ) : null}
           </article>
         ))}
@@ -163,7 +268,15 @@ function SubcategoryChooser({
   }
 
   const sectionTitle =
-    guide.category.slug === "aperitivos" ? "Subcategorías de aperitivos" : "Subcategorías de destilados";
+    guide.category.slug === "aperitivos"
+      ? "Subcategorías de aperitivos"
+      : guide.category.slug === "vino"
+        ? "Subcategorías de vinos"
+      : guide.category.slug === "cerveza"
+        ? "Subcategorías de cervezas"
+      : guide.category.slug === "licores"
+        ? "Subcategorías de licores"
+        : "Subcategorías de destilados";
 
   return (
     <section className="detail__section">
@@ -174,7 +287,7 @@ function SubcategoryChooser({
 
           return (
             <Link
-              key={`${guide.category.slug}-${subcategory.slug}`}
+              key={subcategory.slug}
               to={`/categoria/${guide.category.slug}/${subcategory.slug}`}
               className={isActive ? "subcategory-card subcategory-card--active" : "subcategory-card"}
             >
@@ -190,12 +303,8 @@ function SubcategoryChooser({
               {subcategory.subtitle ? (
                 <p className="subcategory-card__subtitle">{subcategory.subtitle}</p>
               ) : null}
-              {subcategory.previewText ? (
-                <p className="subcategory-card__text">{subcategory.previewText}</p>
-              ) : null}
-              <span className="subcategory-card__link">
-                {isActive ? "Subcategoría actual" : "Ver subcategoría →"}
-              </span>
+              <p className="subcategory-card__text">{subcategory.previewText}</p>
+              <span className="subcategory-card__link">Ver ficha</span>
             </Link>
           );
         })}
@@ -247,10 +356,14 @@ function GuidePanel({
                 />
               ) : null}
               {!hideSectionHeader ? <h3 className="classification-card__title">{section.title}</h3> : null}
-              {!hideSectionHeader ? <p className="classification-card__subtitle">{section.subtitle}</p> : null}
+              {!hideSectionHeader ? (
+                <p className="classification-card__subtitle">
+                  <GlossaryText text={section.subtitle} />
+                </p>
+              ) : null}
               {section.paragraphs.map((paragraph) => (
                 <p key={paragraph} className="classification-card__text">
-                  {paragraph}
+                  <GlossaryText text={paragraph} />
                 </p>
               ))}
             </article>
@@ -272,7 +385,9 @@ function GuidePanel({
       {activeTab.noteContent ? (
         <aside className="detail__note">
           <h3 className="detail__subheading">{activeTab.noteTitle ?? "Nota"}</h3>
-          <p>{activeTab.noteContent}</p>
+          <p>
+            <GlossaryText text={activeTab.noteContent} />
+          </p>
         </aside>
       ) : null}
     </div>
@@ -348,7 +463,12 @@ export default function CategoryPage() {
     return subcategories.find((subcategory) => subcategory.slug === subId) ?? null;
   }, [subcategories, subId]);
   const selectedSubcategorySection = selectedSubcategory?.tab.sections[0] ?? null;
-  const supportsSubcategories = category?.slug === "destilados" || category?.slug === "aperitivos";
+  const supportsSubcategories =
+    category?.slug === "destilados" ||
+    category?.slug === "aperitivos" ||
+    category?.slug === "cerveza" ||
+    category?.slug === "vino" ||
+    category?.slug === "licores";
   const detailImageUrl = selectedSubcategorySection?.imageUrl ?? category?.imageUrl ?? "";
   const detailImageAlt = selectedSubcategorySection?.imageAlt ?? category?.imageAlt ?? "";
   const detailEyebrow = "Ficha";
@@ -418,7 +538,9 @@ export default function CategoryPage() {
         <p className="hero__eyebrow">{detailEyebrow}</p>
         <h1 className="hero__title detail__title">{detailTitle}</h1>
       </header>
-      <p className="detail__summary">{detailSummary}</p>
+      <p className="detail__summary">
+        <GlossaryText text={detailSummary} />
+      </p>
       {!selectedSubcategory ? (
         <dl className="detail__meta">
           <div>
@@ -439,7 +561,15 @@ export default function CategoryPage() {
       {guide && supportsSubcategories && subId ? (
         <section className="detail__section detail__section--compact">
           <Link to={`/categoria/${category.slug}`} className="detail__back detail__back--subtle">
-            {category.slug === "aperitivos" ? "← Volver a todos los aperitivos" : "← Volver a todos los destilados"}
+            {category.slug === "aperitivos"
+              ? "← Volver a todos los aperitivos"
+              : category.slug === "cerveza"
+                ? "← Volver a todas las cervezas"
+              : category.slug === "vino"
+                ? "← Volver a todos los vinos"
+              : category.slug === "licores"
+                ? "← Volver a todos los licores"
+                : "← Volver a todos los destilados"}
           </Link>
         </section>
       ) : null}
@@ -488,6 +618,12 @@ export default function CategoryPage() {
             <p className="status-message status-message--error">
               {category.slug === "aperitivos"
                 ? "No se encontró la subcategoría de aperitivo solicitada."
+                : category.slug === "cerveza"
+                  ? "No se encontró la subcategoría de cerveza solicitada."
+                : category.slug === "vino"
+                  ? "No se encontró la subcategoría de vino solicitada."
+                : category.slug === "licores"
+                  ? "No se encontró la subcategoría de licor solicitada."
                 : "No se encontró la subcategoría de destilado solicitada."}
             </p>
           ) : null}

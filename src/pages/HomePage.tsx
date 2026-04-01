@@ -1,13 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getCategories } from "../api/client";
 import type { Category } from "../api/types";
+import { GlossaryText, useGlossary } from "../glossary";
 
 export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const sliderRef = useRef<HTMLUListElement | null>(null);
+  const { items: glossary, loading: glossaryLoading } = useGlossary();
+  const featuredGlossary = useMemo(
+    () => glossary.filter((item) => item.featured).slice(0, 6),
+    [glossary],
+  );
 
   function scrollSlider(direction: "prev" | "next") {
     const slider = sliderRef.current;
@@ -99,7 +105,9 @@ export default function HomePage() {
                       <p className="category-slide__eyebrow">Categoría</p>
                       <h3 className="category-slide__title">{item.title}</h3>
                       <div className="category-slide__details">
-                        <p className="category-slide__text">{item.summary}</p>
+                        <p className="category-slide__text">
+                          <GlossaryText text={item.summary} />
+                        </p>
                         <dl className="category-slide__meta">
                           <div>
                             <dt>Graduación típica</dt>
@@ -129,6 +137,35 @@ export default function HomePage() {
             </button>
           </div>
         ) : null}
+      </section>
+
+      <section className="detail__section" aria-labelledby="section-glosario">
+        <h2 id="section-glosario" className="section-title">
+          Glosario básico para empezar
+        </h2>
+        <p className="home-slider__hint">
+          Si recién empiezas, estas palabras te ayudan a entender mejor casi cualquier ficha.
+        </p>
+
+        {!glossaryLoading && !error ? (
+          <div className="card-list">
+            {featuredGlossary.map((item) => (
+              <article key={item.slug} className="card">
+                <h3 className="card__title">{item.term}</h3>
+                <p className="card__text">
+                  <GlossaryText text={item.shortDefinition} excludeSlugs={[item.slug]} />
+                </p>
+                <p className="card__text">
+                  <GlossaryText text={item.details[0]} excludeSlugs={[item.slug]} />
+                </p>
+              </article>
+            ))}
+          </div>
+        ) : null}
+
+        <p className="home-glossary__more">
+          <Link to="/glosario">Ver glosario completo</Link>
+        </p>
       </section>
 
       <aside className="notice" role="note">

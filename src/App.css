@@ -402,6 +402,10 @@
   font-weight: 300;
 }
 
+.card__text:last-child {
+  margin-bottom: 0;
+}
+
 .card__meta {
   margin: 0;
   display: grid;
@@ -453,6 +457,32 @@
 }
 
 .notice__more a:hover {
+  text-decoration: underline;
+}
+
+.glossary-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.16em;
+}
+
+.glossary-link:hover {
+  color: #e7bf59;
+}
+
+.home-glossary__more {
+  margin: 1rem 0 0;
+}
+
+.home-glossary__more a,
+.classification-card__reference a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.home-glossary__more a:hover,
+.classification-card__reference a:hover {
   text-decoration: underline;
 }
 
@@ -663,6 +693,16 @@
   font-size: 0.9rem;
   font-weight: 500;
   line-height: 1.55;
+}
+
+.glossary-entry {
+  scroll-margin-top: 6rem;
+}
+
+.glossary-entry:target {
+  border-color: rgba(201, 162, 39, 0.48);
+  background: rgba(201, 162, 39, 0.08);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
 }
 
 .subcategory-grid {

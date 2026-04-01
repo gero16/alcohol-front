@@ -19,6 +19,18 @@ function isAperitifSubcategorySourceTabSlug(slug: string): boolean {
   return slug === "ejemplos" || slug === "marcas-y-estilos";
 }
 
+function isWineSubcategorySourceTabSlug(slug: string): boolean {
+  return slug === "estilos";
+}
+
+function isBeerSubcategorySourceTabSlug(slug: string): boolean {
+  return slug === "por-color";
+}
+
+function isLiqueurSubcategoryTabSlug(slug: string): boolean {
+  return !["que-son", "elaboracion", "familias", "servicio", "ejemplos"].includes(slug);
+}
+
 type NavSubcategory = {
   slug: string;
   label: string;
@@ -39,20 +51,69 @@ function getAperitifSubcategories(guide: GuideDetail | null): NavSubcategory[] {
     );
 }
 
+function getWineSubcategories(guide: GuideDetail | null): NavSubcategory[] {
+  if (!guide) {
+    return [];
+  }
+
+  return guide.tabs
+    .filter((tab) => isWineSubcategorySourceTabSlug(tab.slug))
+    .flatMap((tab) =>
+      tab.sections.map((section) => ({
+        slug: section.slug,
+        label: section.title.replace(/^\d+\.\s*/, ""),
+      })),
+    );
+}
+
+function getBeerSubcategories(guide: GuideDetail | null): NavSubcategory[] {
+  if (!guide) {
+    return [];
+  }
+
+  return guide.tabs
+    .filter((tab) => isBeerSubcategorySourceTabSlug(tab.slug))
+    .flatMap((tab) =>
+      tab.sections.map((section) => ({
+        slug: section.slug,
+        label: section.title.replace(/^Cervezas\s+/i, ""),
+      })),
+    );
+}
+
+function getLiqueurSubcategories(guide: GuideDetail | null): NavSubcategory[] {
+  if (!guide) {
+    return [];
+  }
+
+  return guide.tabs
+    .filter((tab) => isLiqueurSubcategoryTabSlug(tab.slug))
+    .map((tab) => ({
+      slug: tab.slug,
+      label: tab.label,
+    }));
+}
+
 export default function Layout() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [distillateTabs, setDistillateTabs] = useState<GuideTab[]>([]);
+  const [wineSubcategories, setWineSubcategories] = useState<NavSubcategory[]>([]);
+  const [beerSubcategories, setBeerSubcategories] = useState<NavSubcategory[]>([]);
   const [aperitifSubcategories, setAperitifSubcategories] = useState<NavSubcategory[]>([]);
+  const [liqueurSubcategories, setLiqueurSubcategories] = useState<NavSubcategory[]>([]);
 
   useEffect(() => {
     let active = true;
 
     void (async () => {
       try {
-        const [nextCategories, distillateGuide, aperitifGuide] = await Promise.all([
+        const [nextCategories, distillateGuide, wineGuide, beerGuide, aperitifGuide, liqueurGuide] = await Promise.all([
           getCategories(),
           getGuideByCategorySlug("destilados"),
+          getGuideByCategorySlug("vino"),
+          getGuideByCategorySlug("cerveza"),
           getGuideByCategorySlug("aperitivos"),
+          getGuideByCategorySlug("licores"),
         ]);
 
         if (active) {
@@ -60,13 +121,19 @@ export default function Layout() {
           setDistillateTabs(
             (distillateGuide?.tabs ?? []).filter((tab) => isSpiritGuideTabSlug(tab.slug)),
           );
+          setWineSubcategories(getWineSubcategories(wineGuide));
+          setBeerSubcategories(getBeerSubcategories(beerGuide));
           setAperitifSubcategories(getAperitifSubcategories(aperitifGuide));
+          setLiqueurSubcategories(getLiqueurSubcategories(liqueurGuide));
         }
       } catch {
         if (active) {
           setCategories([]);
           setDistillateTabs([]);
+          setWineSubcategories([]);
+          setBeerSubcategories([]);
           setAperitifSubcategories([]);
+          setLiqueurSubcategories([]);
         }
       }
     })();
@@ -96,16 +163,30 @@ export default function Layout() {
                   Consumo responsable
                 </NavLink>
               </li>
+              <li className="nav__item">
+                <NavLink to="/glosario" className="nav__link">
+                  Glosario
+                </NavLink>
+              </li>
               {categories.map((category) => {
                 const isDistillates = category.slug === "destilados";
+                const isWines = category.slug === "vino";
+                const isBeers = category.slug === "cerveza";
                 const isAperitifs = category.slug === "aperitivos";
+                const isLiqueurs = category.slug === "licores";
                 const submenuItems = isDistillates
                   ? distillateTabs.map((tab) => ({
                       slug: toSpiritSubcategorySlug(tab.slug),
                       label: toSpiritDisplayLabel(tab.label),
                     }))
+                  : isWines
+                    ? wineSubcategories
+                  : isBeers
+                    ? beerSubcategories
                   : isAperitifs
                     ? aperitifSubcategories
+                    : isLiqueurs
+                      ? liqueurSubcategories
                     : [];
 
                 return (
@@ -120,7 +201,15 @@ export default function Layout() {
                       <ul
                         className="nav__submenu"
                         aria-label={
-                          isAperitifs ? "Subcategorías de aperitivos" : "Subcategorías de destilados"
+                          isDistillates
+                            ? "Subcategorías de destilados"
+                            : isWines
+                              ? "Subcategorías de vinos"
+                            : isBeers
+                              ? "Subcategorías de cervezas"
+                            : isAperitifs
+                              ? "Subcategorías de aperitivos"
+                              : "Subcategorías de licores"
                         }
                       >
                         {submenuItems.map((item) => (

@@ -129,3 +129,12 @@ export type GuideInput = {
   type: string;
   tabs: GuideTabInput[];
 };
+
+export type GlossaryItem = {
+  slug: string;
+  term: string;
+  shortDefinition: string;
+  details: string[];
+  relatedCategories: string[];
+  featured?: boolean;
+};

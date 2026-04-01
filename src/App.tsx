@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import AdminLayout from "./components/admin/AdminLayout";
 import HomePage from "./pages/HomePage";
 import CategoryPage from "./pages/CategoryPage";
+import GlossaryPage from "./pages/GlossaryPage";
 import ResponsiblePage from "./pages/ResponsiblePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminHomePage from "./pages/admin/AdminHomePage";
@@ -22,6 +23,7 @@ function App() {
         </Route>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="glosario" element={<GlossaryPage />} />
           <Route path="categoria/:id" element={<CategoryPage />} />
           <Route path="categoria/:id/:subId" element={<CategoryPage />} />
           <Route path="consumo-responsable" element={<ResponsiblePage />} />
