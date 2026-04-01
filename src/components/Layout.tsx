@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { getCategories, getGuideByCategorySlug } from "../api/client";
-import type { Category, GuideTab } from "../api/types";
+import type { Category, GuideDetail, GuideTab } from "../api/types";
 
 function isSpiritGuideTabSlug(slug: string): boolean {
   return slug.endsWith("-guia");
@@ -15,18 +15,44 @@ function toSpiritDisplayLabel(label: string): string {
   return label.replace(/\s+desde\s+cero$/i, "");
 }
 
+function isAperitifSubcategorySourceTabSlug(slug: string): boolean {
+  return slug === "ejemplos" || slug === "marcas-y-estilos";
+}
+
+type NavSubcategory = {
+  slug: string;
+  label: string;
+};
+
+function getAperitifSubcategories(guide: GuideDetail | null): NavSubcategory[] {
+  if (!guide) {
+    return [];
+  }
+
+  return guide.tabs
+    .filter((tab) => isAperitifSubcategorySourceTabSlug(tab.slug))
+    .flatMap((tab) =>
+      tab.sections.map((section) => ({
+        slug: section.slug,
+        label: section.title,
+      })),
+    );
+}
+
 export default function Layout() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [distillateTabs, setDistillateTabs] = useState<GuideTab[]>([]);
+  const [aperitifSubcategories, setAperitifSubcategories] = useState<NavSubcategory[]>([]);
 
   useEffect(() => {
     let active = true;
 
     void (async () => {
       try {
-        const [nextCategories, distillateGuide] = await Promise.all([
+        const [nextCategories, distillateGuide, aperitifGuide] = await Promise.all([
           getCategories(),
           getGuideByCategorySlug("destilados"),
+          getGuideByCategorySlug("aperitivos"),
         ]);
 
         if (active) {
@@ -34,11 +60,13 @@ export default function Layout() {
           setDistillateTabs(
             (distillateGuide?.tabs ?? []).filter((tab) => isSpiritGuideTabSlug(tab.slug)),
           );
+          setAperitifSubcategories(getAperitifSubcategories(aperitifGuide));
         }
       } catch {
         if (active) {
           setCategories([]);
           setDistillateTabs([]);
+          setAperitifSubcategories([]);
         }
       }
     })();
@@ -70,24 +98,38 @@ export default function Layout() {
               </li>
               {categories.map((category) => {
                 const isDistillates = category.slug === "destilados";
+                const isAperitifs = category.slug === "aperitivos";
+                const submenuItems = isDistillates
+                  ? distillateTabs.map((tab) => ({
+                      slug: toSpiritSubcategorySlug(tab.slug),
+                      label: toSpiritDisplayLabel(tab.label),
+                    }))
+                  : isAperitifs
+                    ? aperitifSubcategories
+                    : [];
 
                 return (
                   <li
                     key={category.id}
-                    className={isDistillates ? "nav__item nav__item--has-children" : "nav__item"}
+                    className={submenuItems.length > 0 ? "nav__item nav__item--has-children" : "nav__item"}
                   >
                     <NavLink to={`/categoria/${category.slug}`} className="nav__link">
                       {category.title}
                     </NavLink>
-                    {isDistillates && distillateTabs.length > 0 ? (
-                      <ul className="nav__submenu" aria-label="Subcategorías de destilados">
-                        {distillateTabs.map((tab) => (
-                          <li key={tab.id}>
+                    {submenuItems.length > 0 ? (
+                      <ul
+                        className="nav__submenu"
+                        aria-label={
+                          isAperitifs ? "Subcategorías de aperitivos" : "Subcategorías de destilados"
+                        }
+                      >
+                        {submenuItems.map((item) => (
+                          <li key={`${category.slug}-${item.slug}`}>
                             <NavLink
-                              to={`/categoria/destilados/${toSpiritSubcategorySlug(tab.slug)}`}
+                              to={`/categoria/${category.slug}/${item.slug}`}
                               className="nav__sublink"
                             >
-                              {toSpiritDisplayLabel(tab.label)}
+                              {item.label}
                             </NavLink>
                           </li>
                         ))}

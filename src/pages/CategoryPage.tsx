@@ -15,6 +15,78 @@ function toSpiritDisplayLabel(label: string): string {
   return label.replace(/\s+desde\s+cero$/i, "");
 }
 
+function isAperitifSubcategorySourceTabSlug(slug: string): boolean {
+  return slug === "ejemplos" || slug === "marcas-y-estilos";
+}
+
+type GuideSubcategory = {
+  slug: string;
+  label: string;
+  subtitle?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  previewText: string;
+  tab: GuideDetail["tabs"][number];
+};
+
+function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
+  if (guide.category.slug === "destilados") {
+    return guide.tabs
+      .filter((tab) => isSpiritGuideTabSlug(tab.slug))
+      .map((tab) => {
+        const previewSection = tab.sections[0];
+
+        return {
+          slug: toSpiritSubcategorySlug(tab.slug),
+          label: toSpiritDisplayLabel(tab.label),
+          subtitle: previewSection?.subtitle,
+          imageUrl: previewSection?.imageUrl,
+          imageAlt: previewSection?.imageAlt,
+          previewText: previewSection?.paragraphs[0] ?? tab.noteContent ?? "",
+          tab,
+        };
+      });
+  }
+
+  if (guide.category.slug === "aperitivos") {
+    return guide.tabs
+      .filter((tab) => isAperitifSubcategorySourceTabSlug(tab.slug))
+      .flatMap((tab) =>
+        tab.sections.map((section) => ({
+          slug: section.slug,
+          label: section.title,
+          subtitle: section.subtitle,
+          imageUrl: section.imageUrl,
+          imageAlt: section.imageAlt,
+          previewText: section.paragraphs[0] ?? "",
+          tab: {
+            ...tab,
+            id: `${tab.id}-${section.id}`,
+            slug: `${tab.slug}-${section.slug}`,
+            label: section.title,
+            panelTitle: section.title,
+            sections: [section],
+            tables: [],
+          },
+        })),
+      );
+  }
+
+  return [];
+}
+
+function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
+  if (guide.category.slug === "destilados") {
+    return guide.tabs.filter((tab) => !isSpiritGuideTabSlug(tab.slug));
+  }
+
+  if (guide.category.slug === "aperitivos") {
+    return guide.tabs.filter((tab) => !isAperitifSubcategorySourceTabSlug(tab.slug));
+  }
+
+  return guide.tabs;
+}
+
 function getRowValue(row: GuideTableRow, column: GuideTableColumn): string {
   const value = row[column.key];
   return typeof value === "string" && value.length > 0 ? value : "Sin dato";
@@ -77,48 +149,50 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
   );
 }
 
-function SpiritSubcategoryChooser({
+function SubcategoryChooser({
   guide,
   activeSubcategorySlug,
 }: {
   guide: GuideDetail;
   activeSubcategorySlug?: string;
 }) {
-  const spiritTabs = guide.tabs.filter((tab) => isSpiritGuideTabSlug(tab.slug));
+  const subcategories = getGuideSubcategories(guide);
 
-  if (spiritTabs.length === 0) {
+  if (subcategories.length === 0) {
     return null;
   }
 
+  const sectionTitle =
+    guide.category.slug === "aperitivos" ? "Subcategorías de aperitivos" : "Subcategorías de destilados";
+
   return (
     <section className="detail__section">
-      <h2 className="section-title">Subcategorías de destilados</h2>
+      <h2 className="section-title">{sectionTitle}</h2>
       <div className="subcategory-grid">
-        {spiritTabs.map((tab) => {
-          const subcategorySlug = toSpiritSubcategorySlug(tab.slug);
-          const previewSection = tab.sections[0];
-          const previewText = previewSection?.paragraphs[0] ?? tab.noteContent ?? "";
-          const isActive = activeSubcategorySlug === subcategorySlug;
+        {subcategories.map((subcategory) => {
+          const isActive = activeSubcategorySlug === subcategory.slug;
 
           return (
             <Link
-              key={tab.id}
-              to={`/categoria/${guide.category.slug}/${subcategorySlug}`}
+              key={`${guide.category.slug}-${subcategory.slug}`}
+              to={`/categoria/${guide.category.slug}/${subcategory.slug}`}
               className={isActive ? "subcategory-card subcategory-card--active" : "subcategory-card"}
             >
-              {previewSection ? (
+              {subcategory.imageUrl ? (
                 <img
                   className="subcategory-card__image"
-                  src={previewSection.imageUrl}
-                  alt={previewSection.imageAlt}
+                  src={subcategory.imageUrl}
+                  alt={subcategory.imageAlt ?? subcategory.label}
                   loading="lazy"
                 />
               ) : null}
-              <h3 className="subcategory-card__title">{toSpiritDisplayLabel(tab.label)}</h3>
-              {previewSection ? (
-                <p className="subcategory-card__subtitle">{previewSection.subtitle}</p>
+              <h3 className="subcategory-card__title">{subcategory.label}</h3>
+              {subcategory.subtitle ? (
+                <p className="subcategory-card__subtitle">{subcategory.subtitle}</p>
               ) : null}
-              {previewText ? <p className="subcategory-card__text">{previewText}</p> : null}
+              {subcategory.previewText ? (
+                <p className="subcategory-card__text">{subcategory.previewText}</p>
+              ) : null}
               <span className="subcategory-card__link">
                 {isActive ? "Subcategoría actual" : "Ver subcategoría →"}
               </span>
@@ -247,39 +321,40 @@ export default function CategoryPage() {
   }, [id]);
 
   const tabs = useMemo(() => guide?.tabs ?? [], [guide]);
-  const spiritTabs = useMemo(() => tabs.filter((tab) => isSpiritGuideTabSlug(tab.slug)), [tabs]);
-  const generalTabs = useMemo(() => tabs.filter((tab) => !isSpiritGuideTabSlug(tab.slug)), [tabs]);
-  const selectedSpiritTab = useMemo(() => {
+  const subcategories = useMemo(() => (guide ? getGuideSubcategories(guide) : []), [guide]);
+  const tabsWithoutSubcategories = useMemo(() => (guide ? getTabsWithoutSubcategories(guide) : tabs), [guide, tabs]);
+  const selectedSubcategory = useMemo(() => {
     if (!subId) {
       return null;
     }
 
-    return spiritTabs.find((tab) => toSpiritSubcategorySlug(tab.slug) === subId) ?? null;
-  }, [spiritTabs, subId]);
-  const selectedSpiritSection = selectedSpiritTab?.sections[0] ?? null;
-  const detailImageUrl = selectedSpiritSection?.imageUrl ?? category?.imageUrl ?? "";
-  const detailImageAlt = selectedSpiritSection?.imageAlt ?? category?.imageAlt ?? "";
+    return subcategories.find((subcategory) => subcategory.slug === subId) ?? null;
+  }, [subcategories, subId]);
+  const selectedSubcategorySection = selectedSubcategory?.tab.sections[0] ?? null;
+  const supportsSubcategories = category?.slug === "destilados" || category?.slug === "aperitivos";
+  const detailImageUrl = selectedSubcategorySection?.imageUrl ?? category?.imageUrl ?? "";
+  const detailImageAlt = selectedSubcategorySection?.imageAlt ?? category?.imageAlt ?? "";
   const detailEyebrow =
-    category?.slug === "destilados" && selectedSpiritTab ? category.title : "Ficha";
+    supportsSubcategories && selectedSubcategory ? category?.title ?? "Ficha" : "Ficha";
   const detailTitle =
-    category?.slug === "destilados" && selectedSpiritTab
-      ? toSpiritDisplayLabel(selectedSpiritTab.label)
+    supportsSubcategories && selectedSubcategory
+      ? selectedSubcategory.label
       : category?.title ?? "";
   const detailSummary =
-    category?.slug === "destilados" && selectedSpiritTab
-      ? selectedSpiritSection?.subtitle ?? selectedSpiritTab.noteContent ?? category?.summary ?? ""
+    supportsSubcategories && selectedSubcategory
+      ? selectedSubcategorySection?.subtitle ?? selectedSubcategory.tab.noteContent ?? category?.summary ?? ""
       : category?.summary ?? "";
   const tabsToRender = useMemo(() => {
     if (!guide) {
       return [];
     }
 
-    if (category?.slug === "destilados") {
-      return subId ? (selectedSpiritTab ? [selectedSpiritTab] : []) : generalTabs;
+    if (supportsSubcategories) {
+      return subId ? (selectedSubcategory ? [selectedSubcategory.tab] : []) : tabsWithoutSubcategories;
     }
 
     return tabs;
-  }, [category?.slug, generalTabs, guide, selectedSpiritTab, subId, tabs]);
+  }, [guide, selectedSubcategory, subId, supportsSubcategories, tabs, tabsWithoutSubcategories]);
 
   useEffect(() => {
     if (tabsToRender.length > 0 && !tabsToRender.some((tab) => tab.slug === activeTabSlug)) {
@@ -315,11 +390,11 @@ export default function CategoryPage() {
     );
   }
 
-  if (category.slug !== "destilados" && subId) {
+  if (!supportsSubcategories && subId) {
     return <Navigate to="/404" replace />;
   }
 
-  if (category.slug === "destilados" && subId && !selectedSpiritTab) {
+  if (supportsSubcategories && subId && !selectedSubcategory) {
     return <Navigate to="/404" replace />;
   }
 
@@ -334,7 +409,7 @@ export default function CategoryPage() {
         <h1 className="hero__title detail__title">{detailTitle}</h1>
       </header>
       <p className="detail__summary">{detailSummary}</p>
-      {!selectedSpiritTab ? (
+      {!selectedSubcategory ? (
         <dl className="detail__meta">
           <div>
             <dt>Graduación típica</dt>
@@ -347,14 +422,14 @@ export default function CategoryPage() {
         </dl>
       ) : null}
 
-      {guide && category.slug === "destilados" ? (
-        <SpiritSubcategoryChooser guide={guide} activeSubcategorySlug={subId} />
+      {guide && supportsSubcategories && !subId ? (
+        <SubcategoryChooser guide={guide} activeSubcategorySlug={subId} />
       ) : null}
 
-      {guide && category.slug === "destilados" && subId ? (
+      {guide && supportsSubcategories && subId ? (
         <section className="detail__section detail__section--compact">
           <Link to={`/categoria/${category.slug}`} className="detail__back detail__back--subtle">
-            ← Volver a todos los destilados
+            {category.slug === "aperitivos" ? "← Volver a todos los aperitivos" : "← Volver a todos los destilados"}
           </Link>
         </section>
       ) : null}
@@ -362,8 +437,8 @@ export default function CategoryPage() {
       {guide ? (
         <section className="detail__section">
           <h2 className="section-title">
-            {category.slug === "destilados" && selectedSpiritTab
-              ? toSpiritDisplayLabel(selectedSpiritTab.label)
+            {supportsSubcategories && selectedSubcategory
+              ? selectedSubcategory.label
               : guide.title}
           </h2>
 
@@ -398,9 +473,11 @@ export default function CategoryPage() {
               }}
               activeTabSlug={activeTabSlug}
             />
-          ) : category.slug === "destilados" ? (
+          ) : supportsSubcategories ? (
             <p className="status-message status-message--error">
-              No se encontró la subcategoría de destilado solicitada.
+              {category.slug === "aperitivos"
+                ? "No se encontró la subcategoría de aperitivo solicitada."
+                : "No se encontró la subcategoría de destilado solicitada."}
             </p>
           ) : null}
         </section>
