@@ -132,7 +132,7 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
       noteTitle: tab.noteTitle ?? "",
       noteContent: tab.noteContent ?? "",
       semanticKey: tab.semanticKey ?? "",
-      classifications: tab.classifications.map((c) => ({
+      classifications: (tab.classifications ?? []).map((c) => ({
         slug: c.slug,
         subtitle: c.subtitle,
         body: c.body,
@@ -182,7 +182,7 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
       noteTitle: emptyToUndefined(tab.noteTitle),
       noteContent: emptyToUndefined(tab.noteContent),
       semanticKey: emptyToUndefined(tab.semanticKey),
-      classifications: tab.classifications
+      classifications: (tab.classifications ?? [])
         .filter((c) => c.slug.trim().length > 0 && c.body.trim().length > 0)
         .map((c) => ({
           slug: c.slug.trim(),
@@ -248,7 +248,7 @@ function validateGuide(guide: GuideInput): string | null {
     }
 
     const classificationSlugs = new Set<string>();
-    for (const [cIndex, c] of tab.classifications.entries()) {
+    for (const [cIndex, c] of (tab.classifications ?? []).entries()) {
       if (c.slug.trim().length === 0 && c.body.trim().length === 0) {
         continue;
       }

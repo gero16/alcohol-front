@@ -26,6 +26,17 @@ type RequestOptions = {
   body?: unknown;
 };
 
+/** La API puede omitir `classifications` en respuestas antiguas; el front asume siempre un array. */
+function normalizeGuideDetail(detail: GuideDetail): GuideDetail {
+  return {
+    ...detail,
+    tabs: detail.tabs.map((tab) => ({
+      ...tab,
+      classifications: tab.classifications ?? [],
+    })),
+  };
+}
+
 async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method ?? "GET",
@@ -65,7 +76,8 @@ export async function getCategoryBySlug(slug: string): Promise<Category> {
 
 export async function getGuideByCategorySlug(slug: string): Promise<GuideDetail | null> {
   try {
-    return await requestJson<GuideDetail>(`/guides/${slug}`);
+    const detail = await requestJson<GuideDetail>(`/guides/${slug}`);
+    return normalizeGuideDetail(detail);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;
@@ -108,10 +120,11 @@ export async function deleteCategory(slug: string): Promise<void> {
 }
 
 export async function saveGuide(categorySlug: string, payload: GuideInput): Promise<GuideDetail> {
-  return requestJson<GuideDetail>(`/guides/${categorySlug}`, {
+  const detail = await requestJson<GuideDetail>(`/guides/${categorySlug}`, {
     method: "PUT",
     body: payload,
   });
+  return normalizeGuideDetail(detail);
 }
 
 export async function createGlossaryItem(payload: GlossaryInput): Promise<GlossaryItem> {

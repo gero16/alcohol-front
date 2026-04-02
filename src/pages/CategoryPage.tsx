@@ -212,7 +212,7 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
     label: section.title.replace(/^\d+\.\s*/, ""),
     panelTitle: section.title,
     semanticKey: section.semanticKey ?? rest.semanticKey,
-    classifications: sectionIndex === 0 ? classifications : [],
+    classifications: sectionIndex === 0 ? (classifications ?? []) : [],
     sections: [section],
     tables: tables.filter((t) => t.sectionSlug?.trim() === section.slug),
     noteTitle: undefined,
@@ -398,9 +398,9 @@ function GuidePanel({
     >
       {activeTab.panelTitle ? <h3 className="detail__subheading">{activeTab.panelTitle}</h3> : null}
 
-      {activeTab.classifications.length > 0 ? (
+      {(activeTab.classifications ?? []).length > 0 ? (
         <div className="classification-list guide-classifications">
-          {activeTab.classifications.map((block) => (
+          {(activeTab.classifications ?? []).map((block) => (
             <article
               key={block.id}
               className="classification-card classification-card--frame"
