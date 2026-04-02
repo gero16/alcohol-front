@@ -8,6 +8,7 @@ import {
 } from "../../api/client";
 import type {
   Category,
+  GuideClassificationInput,
   GuideDetail,
   GuideInput,
   GuideSectionInput,
@@ -19,7 +20,7 @@ import type {
 } from "../../api/types";
 import { GUIDE_SEMANTIC_SELECT_OPTIONS, isGuideSemanticKey } from "../../guideSemantics";
 
-type GuideEditorBlock = "general" | "note" | "sections" | "tables";
+type GuideEditorBlock = "general" | "note" | "classifications" | "sections" | "tables";
 
 const tableColumnOptions: Array<GuideTableColumn["key"]> = [
   "term",
@@ -47,8 +48,20 @@ function createEmptyTab(position: number): GuideTabInput {
     noteTitle: "",
     noteContent: "",
     semanticKey: "",
+    classifications: [],
     sections: [],
     tables: [],
+  };
+}
+
+function createEmptyClassification(): GuideClassificationInput {
+  return {
+    slug: "",
+    subtitle: "",
+    body: "",
+    imageUrl: "",
+    imageAlt: "",
+    semanticKey: "",
   };
 }
 
@@ -119,6 +132,14 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
       noteTitle: tab.noteTitle ?? "",
       noteContent: tab.noteContent ?? "",
       semanticKey: tab.semanticKey ?? "",
+      classifications: tab.classifications.map((c) => ({
+        slug: c.slug,
+        subtitle: c.subtitle,
+        body: c.body,
+        imageUrl: c.imageUrl,
+        imageAlt: c.imageAlt,
+        semanticKey: c.semanticKey ?? "",
+      })),
       sections: tab.sections.map((section) => ({
         slug: section.slug,
         title: section.title,
@@ -161,6 +182,16 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
       noteTitle: emptyToUndefined(tab.noteTitle),
       noteContent: emptyToUndefined(tab.noteContent),
       semanticKey: emptyToUndefined(tab.semanticKey),
+      classifications: tab.classifications
+        .filter((c) => c.slug.trim().length > 0 && c.body.trim().length > 0)
+        .map((c) => ({
+          slug: c.slug.trim(),
+          subtitle: c.subtitle.trim(),
+          body: c.body.trim(),
+          imageUrl: c.imageUrl.trim(),
+          imageAlt: c.imageAlt.trim(),
+          semanticKey: emptyToUndefined(c.semanticKey),
+        })),
       sections: tab.sections.map((section) => ({
         slug: section.slug.trim(),
         title: section.title.trim(),
@@ -214,6 +245,24 @@ function validateGuide(guide: GuideInput): string | null {
     const tabSemantic = tab.semanticKey?.trim();
     if (tabSemantic && !isGuideSemanticKey(tabSemantic)) {
       return `La pestaña "${tab.label || tab.slug}" tiene un tipo semántico no válido.`;
+    }
+
+    const classificationSlugs = new Set<string>();
+    for (const [cIndex, c] of tab.classifications.entries()) {
+      if (c.slug.trim().length === 0 && c.body.trim().length === 0) {
+        continue;
+      }
+      if (c.slug.trim().length === 0 || c.body.trim().length === 0) {
+        return `La clasificación ${cIndex + 1} de la pestaña "${tab.label || tab.slug}" necesita slug y texto (o déjala vacía).`;
+      }
+      if (classificationSlugs.has(c.slug.trim())) {
+        return `El slug de clasificación "${c.slug}" está repetido en "${tab.label || tab.slug}".`;
+      }
+      classificationSlugs.add(c.slug.trim());
+      const cSemantic = c.semanticKey?.trim();
+      if (cSemantic && !isGuideSemanticKey(cSemantic)) {
+        return `La clasificación "${c.slug}" tiene un tipo semántico no válido.`;
+      }
     }
 
     const sectionSlugs = new Set<string>();
@@ -288,6 +337,7 @@ export default function AdminGuidesPage() {
   const [guide, setGuide] = useState<GuideInput | null>(null);
   const [activeTabIndex, setActiveTabIndex] = useState<number | null>(null);
   const [activeSectionByTab, setActiveSectionByTab] = useState<Record<number, number>>({});
+  const [activeClassificationByTab, setActiveClassificationByTab] = useState<Record<number, number>>({});
   const [activeEditorBlockByTab, setActiveEditorBlockByTab] = useState<
     Record<number, GuideEditorBlock | null>
   >({});
@@ -355,6 +405,7 @@ export default function AdminGuidesPage() {
         }
         setActiveTabIndex(null);
         setActiveSectionByTab({});
+        setActiveClassificationByTab({});
         setActiveEditorBlockByTab({});
         setDirty(false);
       } catch (err) {
@@ -618,6 +669,11 @@ export default function AdminGuidesPage() {
                     Math.max(tab.sections.length - 1, 0),
                   );
                   const activeSection = tab.sections[activeSectionIndex];
+                  const activeClassificationIndex = Math.min(
+                    activeClassificationByTab[tabIndex] ?? 0,
+                    Math.max(tab.classifications.length - 1, 0),
+                  );
+                  const activeClassification = tab.classifications[activeClassificationIndex];
                   const activeEditorBlock = activeEditorBlockByTab[tabIndex] ?? null;
 
                   return (
@@ -677,6 +733,7 @@ export default function AdminGuidesPage() {
                         {([
                           ["general", "General"],
                           ["note", "Nota"],
+                          ["classifications", "Clasificaciones"],
                           ["sections", "Secciones"],
                           ["tables", "Tablas"],
                         ] as Array<[GuideEditorBlock, string]>).map(([blockId, label]) => (
@@ -701,6 +758,42 @@ export default function AdminGuidesPage() {
                           </button>
                         ))}
                       </div>
+
+                      {activeEditorBlock === "classifications" && tab.classifications.length > 0 ? (
+                        <div className="admin-subsection admin-subsection--top">
+                          <div className="admin-panel__header">
+                            <h4 className="admin-subsection__title">Clasificaciones</h4>
+                          </div>
+                          <div
+                            className="admin-section-selector"
+                            role="tablist"
+                            aria-label="Bloques de clasificación de la pestaña"
+                          >
+                            {tab.classifications.map((c, cIdx) => (
+                              <button
+                                key={`top-cl-${c.slug}-${cIdx}`}
+                                type="button"
+                                role="tab"
+                                aria-selected={cIdx === activeClassificationIndex}
+                                className={
+                                  cIdx === activeClassificationIndex
+                                    ? "admin-section-selector__button admin-section-selector__button--active"
+                                    : "admin-section-selector__button"
+                                }
+                                onClick={() =>
+                                  setActiveClassificationByTab((current) => ({
+                                    ...current,
+                                    [tabIndex]: cIdx,
+                                  }))
+                                }
+                              >
+                                <span>{c.slug.trim() || `Clasificación ${cIdx + 1}`}</span>
+                                <small>{c.slug || "sin-slug"}</small>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
 
                       {activeEditorBlock === "sections" && tab.sections.length > 0 ? (
                         <div className="admin-subsection admin-subsection--top">
@@ -832,6 +925,216 @@ export default function AdminGuidesPage() {
                             />
                           </label>
                         </>
+                      ) : null}
+
+                      {activeEditorBlock === "classifications" ? (
+                        <div className="admin-subsection">
+                          <div className="admin-panel__header">
+                            <h4 className="admin-subsection__title">Clasificaciones (marco introductorio)</h4>
+                            <button
+                              type="button"
+                              className="admin-button admin-button--secondary"
+                              onClick={() => {
+                                setActiveClassificationByTab((current) => ({
+                                  ...current,
+                                  [tabIndex]: tab.classifications.length,
+                                }));
+                                updateGuide((draft) => {
+                                  draft.tabs[tabIndex].classifications.push(createEmptyClassification());
+                                });
+                              }}
+                            >
+                              Agregar clasificación
+                            </button>
+                          </div>
+                          <p className="admin-field__hint">
+                            Bloques con subtítulo, un texto e imagen opcional. En la guía pública se muestran antes de las
+                            secciones (tarjetas con título).
+                          </p>
+
+                          {tab.classifications.length === 0 ? (
+                            <p className="status-message">Esta pestaña aún no tiene bloques de clasificación.</p>
+                          ) : (
+                            <div className="admin-stack">
+                              <div
+                                className="admin-section-selector"
+                                role="tablist"
+                                aria-label="Clasificaciones de la pestaña"
+                              >
+                                {tab.classifications.map((c, cIdx) => (
+                                  <button
+                                    key={`cl-${c.slug}-${cIdx}`}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={cIdx === activeClassificationIndex}
+                                    className={
+                                      cIdx === activeClassificationIndex
+                                        ? "admin-section-selector__button admin-section-selector__button--active"
+                                        : "admin-section-selector__button"
+                                    }
+                                    onClick={() =>
+                                      setActiveClassificationByTab((current) => ({
+                                        ...current,
+                                        [tabIndex]: cIdx,
+                                      }))
+                                    }
+                                  >
+                                    <span>{c.slug.trim() || `Clasificación ${cIdx + 1}`}</span>
+                                    <small>{c.slug || "sin-slug"}</small>
+                                  </button>
+                                ))}
+                              </div>
+
+                              {activeClassification ? (
+                                <div className="admin-nested admin-nested--active" role="tabpanel">
+                                  <div className="admin-nested__summary">
+                                    <span>{activeClassification.slug.trim() || `Clasificación ${activeClassificationIndex + 1}`}</span>
+                                    <small>{activeClassification.slug || "sin-slug"}</small>
+                                  </div>
+                                  <div className="admin-nested__body">
+                                    <div className="admin-toolbar">
+                                      <button
+                                        type="button"
+                                        className="admin-button admin-button--ghost"
+                                        onClick={() =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].classifications = moveItem(
+                                              draft.tabs[tabIndex].classifications,
+                                              activeClassificationIndex,
+                                              activeClassificationIndex - 1,
+                                            );
+                                          })
+                                        }
+                                        disabled={activeClassificationIndex === 0}
+                                      >
+                                        Subir
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="admin-button admin-button--ghost"
+                                        onClick={() =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].classifications = moveItem(
+                                              draft.tabs[tabIndex].classifications,
+                                              activeClassificationIndex,
+                                              activeClassificationIndex + 1,
+                                            );
+                                          })
+                                        }
+                                        disabled={activeClassificationIndex === tab.classifications.length - 1}
+                                      >
+                                        Bajar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="admin-button admin-button--danger"
+                                        onClick={() => {
+                                          setActiveClassificationByTab((current) => ({
+                                            ...current,
+                                            [tabIndex]: Math.max(0, activeClassificationIndex - 1),
+                                          }));
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].classifications.splice(activeClassificationIndex, 1);
+                                          });
+                                        }}
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
+
+                                    <div className="admin-form__grid">
+                                      <label className="admin-field">
+                                        <span>Slug</span>
+                                        <input
+                                          value={activeClassification.slug}
+                                          onChange={(event) =>
+                                            updateGuide((draft) => {
+                                              draft.tabs[tabIndex].classifications[activeClassificationIndex].slug =
+                                                event.target.value;
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                    </div>
+
+                                    <label className="admin-field admin-field--full">
+                                      <span>Subtítulo</span>
+                                      <input
+                                        value={activeClassification.subtitle}
+                                        onChange={(event) =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].classifications[activeClassificationIndex].subtitle =
+                                              event.target.value;
+                                          })
+                                        }
+                                      />
+                                    </label>
+
+                                    <label className="admin-field admin-field--full">
+                                      <span>Texto</span>
+                                      <textarea
+                                        rows={6}
+                                        value={activeClassification.body}
+                                        onChange={(event) =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].classifications[activeClassificationIndex].body =
+                                              event.target.value;
+                                          })
+                                        }
+                                      />
+                                    </label>
+
+                                    <div className="admin-form__grid">
+                                      <label className="admin-field">
+                                        <span>URL imagen (opcional)</span>
+                                        <input
+                                          value={activeClassification.imageUrl}
+                                          onChange={(event) =>
+                                            updateGuide((draft) => {
+                                              draft.tabs[tabIndex].classifications[activeClassificationIndex].imageUrl =
+                                                event.target.value;
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label className="admin-field">
+                                        <span>Texto alternativo imagen</span>
+                                        <input
+                                          value={activeClassification.imageAlt}
+                                          onChange={(event) =>
+                                            updateGuide((draft) => {
+                                              draft.tabs[tabIndex].classifications[activeClassificationIndex].imageAlt =
+                                                event.target.value;
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                    </div>
+
+                                    <label className="admin-field admin-field--full">
+                                      <span>Tipo semántico (opcional)</span>
+                                      <select
+                                        value={activeClassification.semanticKey?.trim() ?? ""}
+                                        onChange={(event) =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].classifications[activeClassificationIndex].semanticKey =
+                                              event.target.value;
+                                          })
+                                        }
+                                      >
+                                        {GUIDE_SEMANTIC_SELECT_OPTIONS.map((opt) => (
+                                          <option key={opt.value || "__none__"} value={opt.value}>
+                                            {opt.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
                       ) : null}
 
                       {activeEditorBlock === "sections" ? (

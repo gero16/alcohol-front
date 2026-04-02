@@ -102,6 +102,26 @@ export type GuideSectionInput = {
   paragraphs: string[];
 };
 
+/** Marco o clasificación: subtítulo, un texto e imagen opcional (sin título de tarjeta como las secciones). */
+export type GuideClassification = {
+  id: string;
+  slug: string;
+  subtitle: string;
+  body: string;
+  imageUrl: string;
+  imageAlt: string;
+  semanticKey?: string;
+};
+
+export type GuideClassificationInput = {
+  slug: string;
+  subtitle: string;
+  body: string;
+  imageUrl: string;
+  imageAlt: string;
+  semanticKey?: string;
+};
+
 export type GuideTab = {
   id: string;
   slug: string;
@@ -110,6 +130,7 @@ export type GuideTab = {
   noteTitle?: string;
   noteContent?: string;
   semanticKey?: string;
+  classifications: GuideClassification[];
   sections: GuideSection[];
   tables: GuideTable[];
 };
@@ -122,6 +143,7 @@ export type GuideTabInput = {
   noteTitle?: string;
   noteContent?: string;
   semanticKey?: string;
+  classifications: GuideClassificationInput[];
   sections: GuideSectionInput[];
   tables: GuideTableInput[];
 };

@@ -196,7 +196,7 @@ function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
  * y agrupa tablas + nota al final, similar a la navegación por pestañas del vino.
  */
 function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): GuideDetail["tabs"] {
-  const { sections, tables, noteTitle, noteContent, panelTitle, ...rest } = tab;
+  const { sections, tables, classifications, noteTitle, noteContent, panelTitle, ...rest } = tab;
 
   if (sections.length <= 1) {
     return [tab];
@@ -205,13 +205,14 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
   const unattachedTables = tables.filter((t) => !(t.sectionSlug && t.sectionSlug.trim().length > 0));
   const noteBlock = noteContent?.trim();
 
-  const sectionTabs: GuideDetail["tabs"] = sections.map((section) => ({
+  const sectionTabs: GuideDetail["tabs"] = sections.map((section, sectionIndex) => ({
     ...rest,
     id: `${tab.id}-sec-${section.id}`,
     slug: `${tab.slug}__sec__${section.slug}`,
     label: section.title.replace(/^\d+\.\s*/, ""),
     panelTitle: section.title,
     semanticKey: section.semanticKey ?? rest.semanticKey,
+    classifications: sectionIndex === 0 ? classifications : [],
     sections: [section],
     tables: tables.filter((t) => t.sectionSlug?.trim() === section.slug),
     noteTitle: undefined,
@@ -226,6 +227,7 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
       label: "Tablas y notas",
       panelTitle: panelTitle ?? "Tablas y notas",
       semanticKey: undefined,
+      classifications: [],
       sections: [],
       tables: [...unattachedTables],
       noteTitle,
@@ -395,6 +397,37 @@ function GuidePanel({
       data-tab-semantic-key={activeTab.semanticKey?.trim() || undefined}
     >
       {activeTab.panelTitle ? <h3 className="detail__subheading">{activeTab.panelTitle}</h3> : null}
+
+      {activeTab.classifications.length > 0 ? (
+        <div className="classification-list guide-classifications">
+          {activeTab.classifications.map((block) => (
+            <article
+              key={block.id}
+              className="classification-card classification-card--frame"
+              data-classification-semantic-key={block.semanticKey?.trim() || undefined}
+            >
+              {block.imageUrl?.trim() ? (
+                <img
+                  className="classification-card__image"
+                  src={block.imageUrl}
+                  alt={block.imageAlt || block.subtitle || "Ilustración"}
+                  loading="lazy"
+                />
+              ) : null}
+              {block.subtitle?.trim() ? (
+                <p className="classification-card__subtitle">
+                  <GlossaryText text={block.subtitle} />
+                </p>
+              ) : null}
+              {block.body?.trim() ? (
+                <p className="classification-card__text">
+                  <GlossaryText text={block.body} />
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       {activeTab.sections.length > 0 ? (
         <div className="classification-list">
