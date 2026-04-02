@@ -4,6 +4,7 @@ import type {
   GlossaryItem,
   GlossaryInput,
   GuideClassification,
+  GuideClassificationBlock,
   GuideDetail,
   GuideInput,
   GuideSummary,
@@ -27,22 +28,52 @@ type RequestOptions = {
   body?: unknown;
 };
 
-/** Respuestas antiguas: sin `classifications` o con `body` en lugar de `paragraphs`. */
+/** APIs antiguas: sin `blocks` o con subtítulo/párrafos/imagen sueltos. */
+function legacyClassificationToBlocks(
+  c: GuideClassification & {
+    body?: string;
+    subtitle?: string;
+    paragraphs?: string[];
+    imageUrl?: string;
+    imageAlt?: string;
+  },
+): GuideClassificationBlock[] {
+  if (Array.isArray(c.blocks) && c.blocks.length > 0) {
+    return c.blocks;
+  }
+  const blocks: GuideClassificationBlock[] = [];
+  if (typeof c.subtitle === "string" && c.subtitle.trim().length > 0) {
+    blocks.push({ kind: "subtitle", text: c.subtitle.trim() });
+  }
+  const pars = Array.isArray(c.paragraphs) ? c.paragraphs.filter((p) => typeof p === "string") : [];
+  const fromBody =
+    typeof c.body === "string" && c.body.trim().length > 0 ? [c.body.trim()] : [];
+  const lines = pars.length > 0 ? pars : fromBody;
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.length > 0) {
+      blocks.push({ kind: "paragraph", text: t });
+    }
+  }
+  if (typeof c.imageUrl === "string" && c.imageUrl.trim().length > 0) {
+    blocks.push({
+      kind: "image",
+      url: c.imageUrl.trim(),
+      alt: typeof c.imageAlt === "string" ? c.imageAlt.trim() : "",
+    });
+  }
+  return blocks.length > 0 ? blocks : [{ kind: "paragraph", text: "" }];
+}
+
 function normalizeGuideDetail(detail: GuideDetail): GuideDetail {
   return {
     ...detail,
     tabs: detail.tabs.map((tab) => ({
       ...tab,
-      classifications: (tab.classifications ?? []).map((c) => {
-        const raw = c as GuideClassification & { body?: string };
-        const fromPars = Array.isArray(raw.paragraphs)
-          ? raw.paragraphs.filter((p) => typeof p === "string")
-          : [];
-        const fromBody =
-          typeof raw.body === "string" && raw.body.trim().length > 0 ? [raw.body.trim()] : [];
-        const paragraphs = fromPars.length > 0 ? fromPars : fromBody;
-        return { ...c, paragraphs };
-      }),
+      classifications: (tab.classifications ?? []).map((c) => ({
+        ...c,
+        blocks: legacyClassificationToBlocks(c),
+      })),
     })),
   };
 }

@@ -8,6 +8,7 @@ import {
 } from "../../api/client";
 import type {
   Category,
+  GuideClassificationBlock,
   GuideClassificationInput,
   GuideDetail,
   GuideInput,
@@ -21,6 +22,40 @@ import type {
 import { GUIDE_SEMANTIC_SELECT_OPTIONS, isGuideSemanticKey } from "../../guideSemantics";
 
 type GuideEditorBlock = "general" | "note" | "classifications" | "sections" | "tables";
+
+function createClassificationBlock(kind: GuideClassificationBlock["kind"]): GuideClassificationBlock {
+  switch (kind) {
+    case "subtitle":
+      return { kind: "subtitle", text: "" };
+    case "paragraph":
+      return { kind: "paragraph", text: "" };
+    case "image":
+      return { kind: "image", url: "", alt: "" };
+    default:
+      return { kind: "paragraph", text: "" };
+  }
+}
+
+function classificationBlockHasContent(block: GuideClassificationBlock): boolean {
+  if (block.kind === "subtitle" || block.kind === "paragraph") {
+    return block.text.trim().length > 0;
+  }
+  return block.url.trim().length > 0;
+}
+
+function sanitizeClassificationBlocks(blocks: GuideClassificationBlock[]): GuideClassificationBlock[] {
+  return blocks
+    .filter(classificationBlockHasContent)
+    .map((b) => {
+      if (b.kind === "subtitle") {
+        return { kind: "subtitle", text: b.text.trim() };
+      }
+      if (b.kind === "paragraph") {
+        return { kind: "paragraph", text: b.text.trim() };
+      }
+      return { kind: "image", url: b.url.trim(), alt: b.alt.trim() };
+    });
+}
 
 const tableColumnOptions: Array<GuideTableColumn["key"]> = [
   "term",
@@ -57,10 +92,7 @@ function createEmptyTab(position: number): GuideTabInput {
 function createEmptyClassification(): GuideClassificationInput {
   return {
     slug: "",
-    subtitle: "",
-    paragraphs: [""],
-    imageUrl: "",
-    imageAlt: "",
+    blocks: [createClassificationBlock("paragraph")],
     semanticKey: "",
   };
 }
@@ -134,13 +166,10 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
       semanticKey: tab.semanticKey ?? "",
       classifications: (tab.classifications ?? []).map((c) => ({
         slug: c.slug,
-        subtitle: c.subtitle,
-        paragraphs:
-          (c.paragraphs ?? []).filter((p) => typeof p === "string").length > 0
-            ? [...(c.paragraphs ?? [])]
-            : [""],
-        imageUrl: c.imageUrl,
-        imageAlt: c.imageAlt,
+        blocks:
+          Array.isArray(c.blocks) && c.blocks.length > 0
+            ? c.blocks.map((b) => ({ ...b }))
+            : [createClassificationBlock("paragraph")],
         semanticKey: c.semanticKey ?? "",
       })),
       sections: tab.sections.map((section) => ({
@@ -187,15 +216,12 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
       semanticKey: emptyToUndefined(tab.semanticKey),
       classifications: (tab.classifications ?? [])
         .filter((c) => {
-          const pars = c.paragraphs.map((p) => p.trim()).filter(Boolean);
-          return c.slug.trim().length > 0 && pars.length > 0;
+          const cleaned = sanitizeClassificationBlocks(c.blocks ?? []);
+          return c.slug.trim().length > 0 && cleaned.length > 0;
         })
         .map((c) => ({
           slug: c.slug.trim(),
-          subtitle: c.subtitle.trim(),
-          paragraphs: c.paragraphs.map((p) => p.trim()).filter(Boolean),
-          imageUrl: c.imageUrl.trim(),
-          imageAlt: c.imageAlt.trim(),
+          blocks: sanitizeClassificationBlocks(c.blocks ?? []),
           semanticKey: emptyToUndefined(c.semanticKey),
         })),
       sections: tab.sections.map((section) => ({
@@ -255,12 +281,12 @@ function validateGuide(guide: GuideInput): string | null {
 
     const classificationSlugs = new Set<string>();
     for (const [cIndex, c] of (tab.classifications ?? []).entries()) {
-      const nonEmptyPars = c.paragraphs.map((p) => p.trim()).filter(Boolean);
-      if (c.slug.trim().length === 0 && nonEmptyPars.length === 0) {
+      const cleaned = sanitizeClassificationBlocks(c.blocks ?? []);
+      if (c.slug.trim().length === 0 && cleaned.length === 0) {
         continue;
       }
-      if (c.slug.trim().length === 0 || nonEmptyPars.length === 0) {
-        return `La clasificación ${cIndex + 1} de la pestaña "${tab.label || tab.slug}" necesita slug y al menos un párrafo con texto (o déjala vacía).`;
+      if (c.slug.trim().length === 0 || cleaned.length === 0) {
+        return `La clasificación ${cIndex + 1} de la pestaña "${tab.label || tab.slug}" necesita slug y al menos un bloque con contenido (subtítulo, párrafo o imagen), o déjala vacía.`;
       }
       if (classificationSlugs.has(c.slug.trim())) {
         return `El slug de clasificación "${c.slug}" está repetido en "${tab.label || tab.slug}".`;
@@ -1064,42 +1090,65 @@ export default function AdminGuidesPage() {
                                       </label>
                                     </div>
 
-                                    <label className="admin-field admin-field--full">
-                                      <span>Subtítulo</span>
-                                      <input
-                                        value={activeClassification.subtitle}
-                                        onChange={(event) =>
-                                          updateGuide((draft) => {
-                                            draft.tabs[tabIndex].classifications[activeClassificationIndex].subtitle =
-                                              event.target.value;
-                                          })
-                                        }
-                                      />
-                                    </label>
-
                                     <div className="admin-subsection">
                                       <div className="admin-panel__header">
-                                        <h5 className="admin-subsection__title">Párrafos</h5>
-                                        <button
-                                          type="button"
-                                          className="admin-button admin-button--secondary"
-                                          onClick={() =>
-                                            updateGuide((draft) => {
-                                              draft.tabs[tabIndex].classifications[
-                                                activeClassificationIndex
-                                              ].paragraphs.push("");
-                                            })
-                                          }
-                                        >
-                                          Agregar párrafo
-                                        </button>
+                                        <h5 className="admin-subsection__title">
+                                          Contenido (orden en la ficha pública)
+                                        </h5>
+                                        <div className="admin-toolbar">
+                                          <button
+                                            type="button"
+                                            className="admin-button admin-button--secondary"
+                                            onClick={() =>
+                                              updateGuide((draft) => {
+                                                draft.tabs[tabIndex].classifications[
+                                                  activeClassificationIndex
+                                                ].blocks.push(createClassificationBlock("subtitle"));
+                                              })
+                                            }
+                                          >
+                                            + Subtítulo
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="admin-button admin-button--secondary"
+                                            onClick={() =>
+                                              updateGuide((draft) => {
+                                                draft.tabs[tabIndex].classifications[
+                                                  activeClassificationIndex
+                                                ].blocks.push(createClassificationBlock("paragraph"));
+                                              })
+                                            }
+                                          >
+                                            + Párrafo
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="admin-button admin-button--secondary"
+                                            onClick={() =>
+                                              updateGuide((draft) => {
+                                                draft.tabs[tabIndex].classifications[
+                                                  activeClassificationIndex
+                                                ].blocks.push(createClassificationBlock("image"));
+                                              })
+                                            }
+                                          >
+                                            + Imagen
+                                          </button>
+                                        </div>
                                       </div>
 
                                       <div className="admin-stack">
-                                        {activeClassification.paragraphs.map((paragraph, paragraphIndex) => (
-                                          <div key={paragraphIndex} className="admin-row-card">
+                                        {activeClassification.blocks.map((block, blockIndex) => (
+                                          <div key={blockIndex} className="admin-row-card">
                                             <div className="admin-toolbar">
-                                              <strong>Párrafo {paragraphIndex + 1}</strong>
+                                              <strong>
+                                                {block.kind === "subtitle"
+                                                  ? "Subtítulo"
+                                                  : block.kind === "paragraph"
+                                                    ? "Párrafo"
+                                                    : "Imagen"}
+                                              </strong>
                                               <div className="admin-toolbar__spacer" />
                                               <button
                                                 type="button"
@@ -1108,15 +1157,16 @@ export default function AdminGuidesPage() {
                                                   updateGuide((draft) => {
                                                     draft.tabs[tabIndex].classifications[
                                                       activeClassificationIndex
-                                                    ].paragraphs = moveItem(
-                                                      draft.tabs[tabIndex].classifications[activeClassificationIndex]
-                                                        .paragraphs,
-                                                      paragraphIndex,
-                                                      paragraphIndex - 1,
+                                                    ].blocks = moveItem(
+                                                      draft.tabs[tabIndex].classifications[
+                                                        activeClassificationIndex
+                                                      ].blocks,
+                                                      blockIndex,
+                                                      blockIndex - 1,
                                                     );
                                                   })
                                                 }
-                                                disabled={paragraphIndex === 0}
+                                                disabled={blockIndex === 0}
                                               >
                                                 Subir
                                               </button>
@@ -1127,17 +1177,17 @@ export default function AdminGuidesPage() {
                                                   updateGuide((draft) => {
                                                     draft.tabs[tabIndex].classifications[
                                                       activeClassificationIndex
-                                                    ].paragraphs = moveItem(
-                                                      draft.tabs[tabIndex].classifications[activeClassificationIndex]
-                                                        .paragraphs,
-                                                      paragraphIndex,
-                                                      paragraphIndex + 1,
+                                                    ].blocks = moveItem(
+                                                      draft.tabs[tabIndex].classifications[
+                                                        activeClassificationIndex
+                                                      ].blocks,
+                                                      blockIndex,
+                                                      blockIndex + 1,
                                                     );
                                                   })
                                                 }
                                                 disabled={
-                                                  paragraphIndex ===
-                                                  activeClassification.paragraphs.length - 1
+                                                  blockIndex === activeClassification.blocks.length - 1
                                                 }
                                               >
                                                 Bajar
@@ -1149,54 +1199,87 @@ export default function AdminGuidesPage() {
                                                   updateGuide((draft) => {
                                                     draft.tabs[tabIndex].classifications[
                                                       activeClassificationIndex
-                                                    ].paragraphs.splice(paragraphIndex, 1);
+                                                    ].blocks.splice(blockIndex, 1);
                                                   })
                                                 }
                                               >
                                                 Quitar
                                               </button>
                                             </div>
-                                            <textarea
-                                              rows={3}
-                                              value={paragraph}
-                                              onChange={(event) =>
-                                                updateGuide((draft) => {
-                                                  draft.tabs[tabIndex].classifications[
-                                                    activeClassificationIndex
-                                                  ].paragraphs[paragraphIndex] = event.target.value;
-                                                })
-                                              }
-                                            />
+                                            {block.kind === "subtitle" ? (
+                                              <input
+                                                value={block.text}
+                                                onChange={(event) =>
+                                                  updateGuide((draft) => {
+                                                    const b =
+                                                      draft.tabs[tabIndex].classifications[
+                                                        activeClassificationIndex
+                                                      ].blocks[blockIndex];
+                                                    if (b.kind === "subtitle") {
+                                                      b.text = event.target.value;
+                                                    }
+                                                  })
+                                                }
+                                              />
+                                            ) : null}
+                                            {block.kind === "paragraph" ? (
+                                              <textarea
+                                                rows={3}
+                                                value={block.text}
+                                                onChange={(event) =>
+                                                  updateGuide((draft) => {
+                                                    const b =
+                                                      draft.tabs[tabIndex].classifications[
+                                                        activeClassificationIndex
+                                                      ].blocks[blockIndex];
+                                                    if (b.kind === "paragraph") {
+                                                      b.text = event.target.value;
+                                                    }
+                                                  })
+                                                }
+                                              />
+                                            ) : null}
+                                            {block.kind === "image" ? (
+                                              <div className="admin-form__grid">
+                                                <label className="admin-field">
+                                                  <span>URL</span>
+                                                  <input
+                                                    value={block.url}
+                                                    onChange={(event) =>
+                                                      updateGuide((draft) => {
+                                                        const b =
+                                                          draft.tabs[tabIndex].classifications[
+                                                            activeClassificationIndex
+                                                          ].blocks[blockIndex];
+                                                        if (b.kind === "image") {
+                                                          b.url = event.target.value;
+                                                        }
+                                                      })
+                                                    }
+                                                  />
+                                                </label>
+                                                <label className="admin-field">
+                                                  <span>Texto alternativo</span>
+                                                  <input
+                                                    value={block.alt}
+                                                    onChange={(event) =>
+                                                      updateGuide((draft) => {
+                                                        const b =
+                                                          draft.tabs[tabIndex].classifications[
+                                                            activeClassificationIndex
+                                                          ].blocks[blockIndex];
+                                                        if (b.kind === "image") {
+                                                          b.alt = event.target.value;
+                                                        }
+                                                      })
+                                                    }
+                                                  />
+                                                </label>
+                                              </div>
+                                            ) : null}
                                           </div>
                                         ))}
                                       </div>
-                                    </div>
-
-                                    <div className="admin-form__grid">
-                                      <label className="admin-field">
-                                        <span>URL imagen (opcional)</span>
-                                        <input
-                                          value={activeClassification.imageUrl}
-                                          onChange={(event) =>
-                                            updateGuide((draft) => {
-                                              draft.tabs[tabIndex].classifications[activeClassificationIndex].imageUrl =
-                                                event.target.value;
-                                            })
-                                          }
-                                        />
-                                      </label>
-                                      <label className="admin-field">
-                                        <span>Texto alternativo imagen</span>
-                                        <input
-                                          value={activeClassification.imageAlt}
-                                          onChange={(event) =>
-                                            updateGuide((draft) => {
-                                              draft.tabs[tabIndex].classifications[activeClassificationIndex].imageAlt =
-                                                event.target.value;
-                                            })
-                                          }
-                                        />
-                                      </label>
                                     </div>
 
                                     <label className="admin-field admin-field--full">

@@ -1,8 +1,147 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { ApiError, getCategoryBySlug, getGuideByCategorySlug } from "../api/client";
-import type { Category, GuideDetail, GuideTable, GuideTableColumn, GuideTableRow } from "../api/types";
+import type {
+  Category,
+  GuideClassification,
+  GuideClassificationBlock,
+  GuideDetail,
+  GuideTable,
+  GuideTableColumn,
+  GuideTableRow,
+} from "../api/types";
 import { GlossaryText } from "../glossary";
+
+function classificationHasVisibleBlocks(c: GuideClassification): boolean {
+  return (c.blocks ?? []).some((piece) => {
+    if (piece.kind === "subtitle" || piece.kind === "paragraph") {
+      return piece.text.trim().length > 0;
+    }
+    return piece.url.trim().length > 0;
+  });
+}
+
+/** Etiqueta legible a partir del slug (p. ej. single-malt → Single malt). */
+function humanizeClassificationSlug(slug: string): string {
+  const s = slug.trim();
+  if (!s) {
+    return "Sin nombre";
+  }
+  return s
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function GuideClassificationsList({ classifications }: { classifications: GuideClassification[] }) {
+  const visible = useMemo(
+    () => classifications.filter(classificationHasVisibleBlocks),
+    [classifications],
+  );
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex((i) => {
+      const max = Math.max(0, visible.length - 1);
+      return Math.min(Math.max(0, i), max);
+    });
+  }, [visible.length]);
+
+  if (visible.length === 0) {
+    return null;
+  }
+
+  const renderCard = (item: GuideClassification) => (
+    <article
+      key={item.id}
+      className="classification-card classification-card--frame"
+      data-classification-semantic-key={item.semanticKey?.trim() || undefined}
+    >
+      {(item.blocks ?? []).map((piece, pieceIdx) => (
+        <ClassificationBlockFragment key={pieceIdx} block={piece} />
+      ))}
+    </article>
+  );
+
+  if (visible.length === 1) {
+    return <div className="classification-list guide-classifications">{renderCard(visible[0])}</div>;
+  }
+
+  const active = visible[activeIndex];
+
+  return (
+    <div className="guide-classifications guide-classifications--multi">
+      <p className="guide-classifications__hint">Varias clasificaciones; elige una:</p>
+      <div className="guide-classifications__switcher" role="tablist" aria-label="Elegir clasificación">
+        {visible.map((item, i) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            id={`classification-tab-${item.id}`}
+            aria-selected={i === activeIndex}
+            tabIndex={i === activeIndex ? 0 : -1}
+            aria-controls={`classification-panel-${item.id}`}
+            className={
+              i === activeIndex
+                ? "guide-classifications__chip guide-classifications__chip--active"
+                : "guide-classifications__chip"
+            }
+            onClick={() => setActiveIndex(i)}
+          >
+            {humanizeClassificationSlug(item.slug)}
+          </button>
+        ))}
+      </div>
+      <div
+        id={`classification-panel-${active.id}`}
+        role="tabpanel"
+        aria-labelledby={`classification-tab-${active.id}`}
+        className="guide-classifications__panel"
+      >
+        {renderCard(active)}
+      </div>
+    </div>
+  );
+}
+
+function ClassificationBlockFragment({ block }: { block: GuideClassificationBlock }) {
+  if (block.kind === "subtitle") {
+    const text = block.text.trim();
+    if (!text) {
+      return null;
+    }
+    return (
+      <p className="classification-card__subtitle">
+        <GlossaryText text={text} />
+      </p>
+    );
+  }
+  if (block.kind === "paragraph") {
+    const text = block.text.trim();
+    if (!text) {
+      return null;
+    }
+    return (
+      <p className="classification-card__text">
+        <GlossaryText text={text} />
+      </p>
+    );
+  }
+  const url = block.url.trim();
+  if (!url) {
+    return null;
+  }
+  return (
+    <img
+      className="classification-card__image"
+      src={url}
+      alt={block.alt.trim() || "Ilustración"}
+      loading="lazy"
+    />
+  );
+}
 
 function isSpiritGuideTabSlug(slug: string): boolean {
   return slug.endsWith("-guia");
@@ -192,8 +331,8 @@ function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
 }
 
 /**
- * En la ficha de un destilado concreto (ej. whisky), convierte cada sección de la guía en una pestaña
- * y agrupa tablas + nota al final, similar a la navegación por pestañas del vino.
+ * En la ficha de un destilado concreto (ej. whisky): pestañas por sección primero,
+ * luego «Clasificaciones» si hay contenido, y al final tablas + nota.
  */
 function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): GuideDetail["tabs"] {
   const { sections, tables, classifications, noteTitle, noteContent, panelTitle, ...rest } = tab;
@@ -204,23 +343,44 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
 
   const unattachedTables = tables.filter((t) => !(t.sectionSlug && t.sectionSlug.trim().length > 0));
   const noteBlock = noteContent?.trim();
+  const cls = classifications ?? [];
+  const hasVisibleClassifications = cls.some(classificationHasVisibleBlocks);
 
-  const sectionTabs: GuideDetail["tabs"] = sections.map((section, sectionIndex) => ({
+  const classificationTabs: GuideDetail["tabs"] = hasVisibleClassifications
+    ? [
+        {
+          ...rest,
+          id: `${tab.id}-clasificaciones`,
+          slug: `${tab.slug}__clasificaciones`,
+          label: "Clasificaciones",
+          panelTitle: "Clasificaciones",
+          semanticKey: undefined,
+          classifications: cls,
+          sections: [],
+          tables: [],
+          noteTitle: undefined,
+          noteContent: undefined,
+        },
+      ]
+    : [];
+
+  const sectionTabs: GuideDetail["tabs"] = sections.map((section) => ({
     ...rest,
     id: `${tab.id}-sec-${section.id}`,
     slug: `${tab.slug}__sec__${section.slug}`,
     label: section.title.replace(/^\d+\.\s*/, ""),
     panelTitle: section.title,
     semanticKey: section.semanticKey ?? rest.semanticKey,
-    classifications: sectionIndex === 0 ? (classifications ?? []) : [],
+    classifications: [],
     sections: [section],
     tables: tables.filter((t) => t.sectionSlug?.trim() === section.slug),
     noteTitle: undefined,
     noteContent: undefined,
   }));
 
+  const extraTabs: GuideDetail["tabs"] = [];
   if (unattachedTables.length > 0 || Boolean(noteBlock)) {
-    sectionTabs.push({
+    extraTabs.push({
       ...rest,
       id: `${tab.id}-extra`,
       slug: `${tab.slug}__extra`,
@@ -235,7 +395,7 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
     });
   }
 
-  return sectionTabs;
+  return [...sectionTabs, ...classificationTabs, ...extraTabs];
 }
 
 function getRowValue(row: GuideTableRow, column: GuideTableColumn): string {
@@ -398,39 +558,10 @@ function GuidePanel({
     >
       {activeTab.panelTitle ? <h3 className="detail__subheading">{activeTab.panelTitle}</h3> : null}
 
-      {(activeTab.classifications ?? []).length > 0 ? (
-        <div className="classification-list guide-classifications">
-          {(activeTab.classifications ?? []).map((block) => (
-            <article
-              key={block.id}
-              className="classification-card classification-card--frame"
-              data-classification-semantic-key={block.semanticKey?.trim() || undefined}
-            >
-              {block.imageUrl?.trim() ? (
-                <img
-                  className="classification-card__image"
-                  src={block.imageUrl}
-                  alt={block.imageAlt || block.subtitle || "Ilustración"}
-                  loading="lazy"
-                />
-              ) : null}
-              {block.subtitle?.trim() ? (
-                <p className="classification-card__subtitle">
-                  <GlossaryText text={block.subtitle} />
-                </p>
-              ) : null}
-              {(block.paragraphs ?? [])
-                .map((p) => p.trim())
-                .filter(Boolean)
-                .map((paragraph, pIdx) => (
-                  <p key={pIdx} className="classification-card__text">
-                    <GlossaryText text={paragraph} />
-                  </p>
-                ))}
-            </article>
-          ))}
-        </div>
-      ) : null}
+      <GuideClassificationsList
+        key={activeTab.slug}
+        classifications={activeTab.classifications ?? []}
+      />
 
       {activeTab.sections.length > 0 ? (
         <div className="classification-list">

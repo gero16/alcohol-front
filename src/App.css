@@ -652,6 +652,88 @@
   gap: 1rem;
 }
 
+/** Clasificaciones en guías: más aire entre tarjetas y bloques internos. */
+.guide-classifications {
+  gap: 2.25rem;
+  margin-bottom: 2rem;
+}
+
+.guide-classifications--multi {
+  display: block;
+  margin-bottom: 2rem;
+}
+
+.guide-classifications__hint {
+  margin: 0 0 0.85rem;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.guide-classifications__switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.guide-classifications__chip {
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.guide-classifications__chip:hover {
+  color: var(--text);
+  border-color: rgba(201, 162, 39, 0.35);
+}
+
+.guide-classifications__chip--active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: rgba(201, 162, 39, 0.35);
+}
+
+.guide-classifications__panel {
+  margin: 0;
+}
+
+.classification-card--frame {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.5rem 1.65rem 1.75rem;
+}
+
+.classification-card--frame .classification-card__subtitle {
+  margin: 0;
+}
+
+.classification-card--frame .classification-card__text {
+  margin: 0;
+  line-height: 1.7;
+}
+
+/** Imágenes dentro de bloques (orden libre): sin márgenes negativos que encimen la tarjeta siguiente. */
+.classification-card--frame .classification-card__image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 160px;
+  max-height: 320px;
+  margin: 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+}
+
 .classification-card {
   padding: 1.25rem 1.5rem;
   background: var(--bg-card);
