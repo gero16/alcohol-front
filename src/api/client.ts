@@ -3,6 +3,7 @@ import type {
   CategoryInput,
   GlossaryItem,
   GlossaryInput,
+  GuideClassification,
   GuideDetail,
   GuideInput,
   GuideSummary,
@@ -26,13 +27,22 @@ type RequestOptions = {
   body?: unknown;
 };
 
-/** La API puede omitir `classifications` en respuestas antiguas; el front asume siempre un array. */
+/** Respuestas antiguas: sin `classifications` o con `body` en lugar de `paragraphs`. */
 function normalizeGuideDetail(detail: GuideDetail): GuideDetail {
   return {
     ...detail,
     tabs: detail.tabs.map((tab) => ({
       ...tab,
-      classifications: tab.classifications ?? [],
+      classifications: (tab.classifications ?? []).map((c) => {
+        const raw = c as GuideClassification & { body?: string };
+        const fromPars = Array.isArray(raw.paragraphs)
+          ? raw.paragraphs.filter((p) => typeof p === "string")
+          : [];
+        const fromBody =
+          typeof raw.body === "string" && raw.body.trim().length > 0 ? [raw.body.trim()] : [];
+        const paragraphs = fromPars.length > 0 ? fromPars : fromBody;
+        return { ...c, paragraphs };
+      }),
     })),
   };
 }

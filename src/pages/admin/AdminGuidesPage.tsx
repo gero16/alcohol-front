@@ -58,7 +58,7 @@ function createEmptyClassification(): GuideClassificationInput {
   return {
     slug: "",
     subtitle: "",
-    body: "",
+    paragraphs: [""],
     imageUrl: "",
     imageAlt: "",
     semanticKey: "",
@@ -135,7 +135,10 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
       classifications: (tab.classifications ?? []).map((c) => ({
         slug: c.slug,
         subtitle: c.subtitle,
-        body: c.body,
+        paragraphs:
+          (c.paragraphs ?? []).filter((p) => typeof p === "string").length > 0
+            ? [...(c.paragraphs ?? [])]
+            : [""],
         imageUrl: c.imageUrl,
         imageAlt: c.imageAlt,
         semanticKey: c.semanticKey ?? "",
@@ -183,11 +186,14 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
       noteContent: emptyToUndefined(tab.noteContent),
       semanticKey: emptyToUndefined(tab.semanticKey),
       classifications: (tab.classifications ?? [])
-        .filter((c) => c.slug.trim().length > 0 && c.body.trim().length > 0)
+        .filter((c) => {
+          const pars = c.paragraphs.map((p) => p.trim()).filter(Boolean);
+          return c.slug.trim().length > 0 && pars.length > 0;
+        })
         .map((c) => ({
           slug: c.slug.trim(),
           subtitle: c.subtitle.trim(),
-          body: c.body.trim(),
+          paragraphs: c.paragraphs.map((p) => p.trim()).filter(Boolean),
           imageUrl: c.imageUrl.trim(),
           imageAlt: c.imageAlt.trim(),
           semanticKey: emptyToUndefined(c.semanticKey),
@@ -249,11 +255,12 @@ function validateGuide(guide: GuideInput): string | null {
 
     const classificationSlugs = new Set<string>();
     for (const [cIndex, c] of (tab.classifications ?? []).entries()) {
-      if (c.slug.trim().length === 0 && c.body.trim().length === 0) {
+      const nonEmptyPars = c.paragraphs.map((p) => p.trim()).filter(Boolean);
+      if (c.slug.trim().length === 0 && nonEmptyPars.length === 0) {
         continue;
       }
-      if (c.slug.trim().length === 0 || c.body.trim().length === 0) {
-        return `La clasificación ${cIndex + 1} de la pestaña "${tab.label || tab.slug}" necesita slug y texto (o déjala vacía).`;
+      if (c.slug.trim().length === 0 || nonEmptyPars.length === 0) {
+        return `La clasificación ${cIndex + 1} de la pestaña "${tab.label || tab.slug}" necesita slug y al menos un párrafo con texto (o déjala vacía).`;
       }
       if (classificationSlugs.has(c.slug.trim())) {
         return `El slug de clasificación "${c.slug}" está repetido en "${tab.label || tab.slug}".`;
@@ -1070,19 +1077,100 @@ export default function AdminGuidesPage() {
                                       />
                                     </label>
 
-                                    <label className="admin-field admin-field--full">
-                                      <span>Texto</span>
-                                      <textarea
-                                        rows={6}
-                                        value={activeClassification.body}
-                                        onChange={(event) =>
-                                          updateGuide((draft) => {
-                                            draft.tabs[tabIndex].classifications[activeClassificationIndex].body =
-                                              event.target.value;
-                                          })
-                                        }
-                                      />
-                                    </label>
+                                    <div className="admin-subsection">
+                                      <div className="admin-panel__header">
+                                        <h5 className="admin-subsection__title">Párrafos</h5>
+                                        <button
+                                          type="button"
+                                          className="admin-button admin-button--secondary"
+                                          onClick={() =>
+                                            updateGuide((draft) => {
+                                              draft.tabs[tabIndex].classifications[
+                                                activeClassificationIndex
+                                              ].paragraphs.push("");
+                                            })
+                                          }
+                                        >
+                                          Agregar párrafo
+                                        </button>
+                                      </div>
+
+                                      <div className="admin-stack">
+                                        {activeClassification.paragraphs.map((paragraph, paragraphIndex) => (
+                                          <div key={paragraphIndex} className="admin-row-card">
+                                            <div className="admin-toolbar">
+                                              <strong>Párrafo {paragraphIndex + 1}</strong>
+                                              <div className="admin-toolbar__spacer" />
+                                              <button
+                                                type="button"
+                                                className="admin-button admin-button--ghost"
+                                                onClick={() =>
+                                                  updateGuide((draft) => {
+                                                    draft.tabs[tabIndex].classifications[
+                                                      activeClassificationIndex
+                                                    ].paragraphs = moveItem(
+                                                      draft.tabs[tabIndex].classifications[activeClassificationIndex]
+                                                        .paragraphs,
+                                                      paragraphIndex,
+                                                      paragraphIndex - 1,
+                                                    );
+                                                  })
+                                                }
+                                                disabled={paragraphIndex === 0}
+                                              >
+                                                Subir
+                                              </button>
+                                              <button
+                                                type="button"
+                                                className="admin-button admin-button--ghost"
+                                                onClick={() =>
+                                                  updateGuide((draft) => {
+                                                    draft.tabs[tabIndex].classifications[
+                                                      activeClassificationIndex
+                                                    ].paragraphs = moveItem(
+                                                      draft.tabs[tabIndex].classifications[activeClassificationIndex]
+                                                        .paragraphs,
+                                                      paragraphIndex,
+                                                      paragraphIndex + 1,
+                                                    );
+                                                  })
+                                                }
+                                                disabled={
+                                                  paragraphIndex ===
+                                                  activeClassification.paragraphs.length - 1
+                                                }
+                                              >
+                                                Bajar
+                                              </button>
+                                              <button
+                                                type="button"
+                                                className="admin-button admin-button--danger"
+                                                onClick={() =>
+                                                  updateGuide((draft) => {
+                                                    draft.tabs[tabIndex].classifications[
+                                                      activeClassificationIndex
+                                                    ].paragraphs.splice(paragraphIndex, 1);
+                                                  })
+                                                }
+                                              >
+                                                Quitar
+                                              </button>
+                                            </div>
+                                            <textarea
+                                              rows={3}
+                                              value={paragraph}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].classifications[
+                                                    activeClassificationIndex
+                                                  ].paragraphs[paragraphIndex] = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
 
                                     <div className="admin-form__grid">
                                       <label className="admin-field">

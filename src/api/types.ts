@@ -102,12 +102,12 @@ export type GuideSectionInput = {
   paragraphs: string[];
 };
 
-/** Marco o clasificación: subtítulo, un texto e imagen opcional (sin título de tarjeta como las secciones). */
+/** Marco o clasificación: subtítulo, párrafos e imagen opcional (sin título de tarjeta como las secciones). */
 export type GuideClassification = {
   id: string;
   slug: string;
   subtitle: string;
-  body: string;
+  paragraphs: string[];
   imageUrl: string;
   imageAlt: string;
   semanticKey?: string;
@@ -116,7 +116,7 @@ export type GuideClassification = {
 export type GuideClassificationInput = {
   slug: string;
   subtitle: string;
-  body: string;
+  paragraphs: string[];
   imageUrl: string;
   imageAlt: string;
   semanticKey?: string;

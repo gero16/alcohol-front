@@ -419,11 +419,14 @@ function GuidePanel({
                   <GlossaryText text={block.subtitle} />
                 </p>
               ) : null}
-              {block.body?.trim() ? (
-                <p className="classification-card__text">
-                  <GlossaryText text={block.body} />
-                </p>
-              ) : null}
+              {(block.paragraphs ?? [])
+                .map((p) => p.trim())
+                .filter(Boolean)
+                .map((paragraph, pIdx) => (
+                  <p key={pIdx} className="classification-card__text">
+                    <GlossaryText text={paragraph} />
+                  </p>
+                ))}
             </article>
           ))}
         </div>
