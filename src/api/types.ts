@@ -53,6 +53,9 @@ export type GuideTable = {
   slug: string;
   title: string;
   displayMode: "table" | "cards";
+  /** Pestaña de sección en destilados (slug de la sección en la misma pestaña de guía). */
+  sectionSlug?: string;
+  semanticKey?: string;
   columns: GuideTableColumn[];
   rows: GuideTableRow[];
 };
@@ -71,6 +74,9 @@ export type GuideTableRowInput = {
 export type GuideTableInput = {
   slug: string;
   title: string;
+  /** Vacío = tabla solo en «Tablas y notas» cuando la guía se parte por secciones. */
+  sectionSlug?: string;
+  semanticKey?: string;
   columns: GuideTableColumn[];
   rows: GuideTableRowInput[];
 };
@@ -82,6 +88,7 @@ export type GuideSection = {
   subtitle: string;
   imageUrl: string;
   imageAlt: string;
+  semanticKey?: string;
   paragraphs: string[];
 };
 
@@ -91,6 +98,7 @@ export type GuideSectionInput = {
   subtitle: string;
   imageUrl: string;
   imageAlt: string;
+  semanticKey?: string;
   paragraphs: string[];
 };
 
@@ -101,6 +109,7 @@ export type GuideTab = {
   panelTitle?: string;
   noteTitle?: string;
   noteContent?: string;
+  semanticKey?: string;
   sections: GuideSection[];
   tables: GuideTable[];
 };
@@ -112,6 +121,7 @@ export type GuideTabInput = {
   panelTitle?: string;
   noteTitle?: string;
   noteContent?: string;
+  semanticKey?: string;
   sections: GuideSectionInput[];
   tables: GuideTableInput[];
 };

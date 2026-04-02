@@ -17,6 +17,7 @@ import type {
   GuideTableRowInput,
   GuideTabInput,
 } from "../../api/types";
+import { GUIDE_SEMANTIC_SELECT_OPTIONS, isGuideSemanticKey } from "../../guideSemantics";
 
 type GuideEditorBlock = "general" | "note" | "sections" | "tables";
 
@@ -45,6 +46,7 @@ function createEmptyTab(position: number): GuideTabInput {
     panelTitle: "",
     noteTitle: "",
     noteContent: "",
+    semanticKey: "",
     sections: [],
     tables: [],
   };
@@ -57,6 +59,7 @@ function createEmptySection(): GuideSectionInput {
     subtitle: "",
     imageUrl: "",
     imageAlt: "",
+    semanticKey: "",
     paragraphs: [""],
   };
 }
@@ -65,6 +68,8 @@ function createEmptyTable(): GuideTableInput {
   return {
     slug: "",
     title: "",
+    sectionSlug: "",
+    semanticKey: "",
     columns: [
       { key: "term", label: "Termino" },
       { key: "description", label: "Descripcion" },
@@ -113,17 +118,21 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
       panelTitle: tab.panelTitle ?? "",
       noteTitle: tab.noteTitle ?? "",
       noteContent: tab.noteContent ?? "",
+      semanticKey: tab.semanticKey ?? "",
       sections: tab.sections.map((section) => ({
         slug: section.slug,
         title: section.title,
         subtitle: section.subtitle,
         imageUrl: section.imageUrl,
         imageAlt: section.imageAlt,
+        semanticKey: section.semanticKey ?? "",
         paragraphs: [...section.paragraphs],
       })),
       tables: tab.tables.map((table) => ({
         slug: table.slug,
         title: table.title,
+        sectionSlug: table.sectionSlug ?? "",
+        semanticKey: table.semanticKey ?? "",
         columns: table.columns.map((column) => ({ ...column })),
         rows: table.rows.map((row) => ({
           term: row.term,
@@ -151,17 +160,21 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
       panelTitle: emptyToUndefined(tab.panelTitle),
       noteTitle: emptyToUndefined(tab.noteTitle),
       noteContent: emptyToUndefined(tab.noteContent),
+      semanticKey: emptyToUndefined(tab.semanticKey),
       sections: tab.sections.map((section) => ({
         slug: section.slug.trim(),
         title: section.title.trim(),
         subtitle: section.subtitle.trim(),
         imageUrl: section.imageUrl.trim(),
         imageAlt: section.imageAlt.trim(),
+        semanticKey: emptyToUndefined(section.semanticKey),
         paragraphs: section.paragraphs.map((paragraph) => paragraph.trim()).filter(Boolean),
       })),
       tables: tab.tables.map((table) => ({
         slug: table.slug.trim(),
         title: table.title.trim(),
+        sectionSlug: emptyToUndefined(table.sectionSlug),
+        semanticKey: emptyToUndefined(table.semanticKey),
         columns: table.columns.map((column) => ({
           key: column.key,
           label: column.label.trim(),
@@ -198,6 +211,11 @@ function validateGuide(guide: GuideInput): string | null {
     }
     tabSlugs.add(tab.slug.trim());
 
+    const tabSemantic = tab.semanticKey?.trim();
+    if (tabSemantic && !isGuideSemanticKey(tabSemantic)) {
+      return `La pestaña "${tab.label || tab.slug}" tiene un tipo semántico no válido.`;
+    }
+
     const sectionSlugs = new Set<string>();
     for (const [sectionIndex, section] of tab.sections.entries()) {
       if (
@@ -213,12 +231,28 @@ function validateGuide(guide: GuideInput): string | null {
         return `El slug de seccion "${section.slug}" esta repetido dentro de ${tab.label || tab.slug}.`;
       }
       sectionSlugs.add(section.slug.trim());
+
+      const secSemantic = section.semanticKey?.trim();
+      if (secSemantic && !isGuideSemanticKey(secSemantic)) {
+        return `La seccion "${section.title || section.slug}" tiene un tipo semántico no válido.`;
+      }
     }
 
     const tableSlugs = new Set<string>();
+    const sectionSlugSet = new Set(tab.sections.map((s) => s.slug.trim()).filter(Boolean));
     for (const [tableIndex, table] of tab.tables.entries()) {
       if (table.slug.trim().length === 0 || table.title.trim().length === 0) {
         return `La tabla ${tableIndex + 1} de la pestaña ${tab.label || tab.slug} necesita slug y titulo.`;
+      }
+
+      const tableSectionHint = table.sectionSlug?.trim();
+      if (tableSectionHint && !sectionSlugSet.has(tableSectionHint)) {
+        return `La tabla "${table.title || table.slug}" usa la sección "${tableSectionHint}", que no existe en esta pestaña.`;
+      }
+
+      const tableSemantic = table.semanticKey?.trim();
+      if (tableSemantic && !isGuideSemanticKey(tableSemantic)) {
+        return `La tabla "${table.title || table.slug}" tiene un tipo semántico no válido.`;
       }
 
       if (table.columns.length === 0) {
@@ -744,6 +778,28 @@ export default function AdminGuidesPage() {
                               />
                             </label>
                           </div>
+
+                          <label className="admin-field admin-field--full">
+                            <span>Tipo semántico de la pestaña (vino, destilados, licores…)</span>
+                            <select
+                              value={tab.semanticKey?.trim() ?? ""}
+                              onChange={(event) =>
+                                updateGuide((draft) => {
+                                  draft.tabs[tabIndex].semanticKey = event.target.value;
+                                })
+                              }
+                            >
+                              {GUIDE_SEMANTIC_SELECT_OPTIONS.map((opt) => (
+                                <option key={opt.value || "__none__"} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                            <small className="admin-field__hint">
+                              Opcional. Misma lista para todas las categorías: sirve para enlazar conceptos (origen, tragos,
+                              tipos…) aunque el título visible sea distinto.
+                            </small>
+                          </label>
                         </>
                       ) : null}
 
@@ -909,6 +965,25 @@ export default function AdminGuidesPage() {
                                     />
                                   </label>
                                 </div>
+
+                                <label className="admin-field admin-field--full">
+                                  <span>Tipo semántico de la sección</span>
+                                  <select
+                                    value={activeSection.semanticKey?.trim() ?? ""}
+                                    onChange={(event) =>
+                                      updateGuide((draft) => {
+                                        draft.tabs[tabIndex].sections[activeSectionIndex].semanticKey =
+                                          event.target.value;
+                                      })
+                                    }
+                                  >
+                                    {GUIDE_SEMANTIC_SELECT_OPTIONS.map((opt) => (
+                                      <option key={opt.value || "__none__"} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
 
                                 <label className="admin-field">
                                   <span>Subtitulo</span>
@@ -1131,6 +1206,54 @@ export default function AdminGuidesPage() {
                                         })
                                       }
                                     />
+                                  </label>
+                                  {tab.sections.length > 0 ? (
+                                    <label className="admin-field admin-field--full">
+                                      <span>Ubicación en ficha multipágina (destilados)</span>
+                                      <select
+                                        value={table.sectionSlug?.trim() ?? ""}
+                                        onChange={(event) =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].tables[tableIndex].sectionSlug =
+                                              event.target.value;
+                                          })
+                                        }
+                                      >
+                                        <option value="">
+                                          Al final: pestaña «Tablas y notas»
+                                        </option>
+                                        {tab.sections.map((section) => (
+                                          <option key={section.slug} value={section.slug.trim()}>
+                                            Junto a: {section.title.trim() || section.slug}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <small className="admin-field__hint">
+                                        Si eliges una sección, la tabla se verá en esa pestaña (como en vino). Si la
+                                        dejas en «Tablas y notas», se agrupa al final.
+                                      </small>
+                                    </label>
+                                  ) : null}
+                                  <label className="admin-field admin-field--full">
+                                    <span>Tipo semántico de la tabla</span>
+                                    <select
+                                      value={table.semanticKey?.trim() ?? ""}
+                                      onChange={(event) =>
+                                        updateGuide((draft) => {
+                                          draft.tabs[tabIndex].tables[tableIndex].semanticKey = event.target.value;
+                                        })
+                                      }
+                                    >
+                                      {GUIDE_SEMANTIC_SELECT_OPTIONS.map((opt) => (
+                                        <option key={opt.value || "__none__"} value={opt.value}>
+                                          {opt.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <small className="admin-field__hint">
+                                      Útil para tablas de tipos, tragos o clasificaciones: misma clave en vino, whisky o
+                                      fernet.
+                                    </small>
                                   </label>
                                 </div>
 

@@ -191,6 +191,51 @@ function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
   return guide.tabs;
 }
 
+/**
+ * En la ficha de un destilado concreto (ej. whisky), convierte cada sección de la guía en una pestaña
+ * y agrupa tablas + nota al final, similar a la navegación por pestañas del vino.
+ */
+function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): GuideDetail["tabs"] {
+  const { sections, tables, noteTitle, noteContent, panelTitle, ...rest } = tab;
+
+  if (sections.length <= 1) {
+    return [tab];
+  }
+
+  const unattachedTables = tables.filter((t) => !(t.sectionSlug && t.sectionSlug.trim().length > 0));
+  const noteBlock = noteContent?.trim();
+
+  const sectionTabs: GuideDetail["tabs"] = sections.map((section) => ({
+    ...rest,
+    id: `${tab.id}-sec-${section.id}`,
+    slug: `${tab.slug}__sec__${section.slug}`,
+    label: section.title.replace(/^\d+\.\s*/, ""),
+    panelTitle: section.title,
+    semanticKey: section.semanticKey ?? rest.semanticKey,
+    sections: [section],
+    tables: tables.filter((t) => t.sectionSlug?.trim() === section.slug),
+    noteTitle: undefined,
+    noteContent: undefined,
+  }));
+
+  if (unattachedTables.length > 0 || Boolean(noteBlock)) {
+    sectionTabs.push({
+      ...rest,
+      id: `${tab.id}-extra`,
+      slug: `${tab.slug}__extra`,
+      label: "Tablas y notas",
+      panelTitle: panelTitle ?? "Tablas y notas",
+      semanticKey: undefined,
+      sections: [],
+      tables: [...unattachedTables],
+      noteTitle,
+      noteContent,
+    });
+  }
+
+  return sectionTabs;
+}
+
 function getRowValue(row: GuideTableRow, column: GuideTableColumn): string {
   const value = row[column.key];
   return typeof value === "string" && value.length > 0 ? value : "Sin dato";
@@ -347,6 +392,7 @@ function GuidePanel({
       role="tabpanel"
       aria-labelledby={`guide-tab-${activeTab.slug}`}
       className="wine-tabs__panel"
+      data-tab-semantic-key={activeTab.semanticKey?.trim() || undefined}
     >
       {activeTab.panelTitle ? <h3 className="detail__subheading">{activeTab.panelTitle}</h3> : null}
 
@@ -359,6 +405,7 @@ function GuidePanel({
             <article
               key={section.id}
               className={hideSectionHeader ? "classification-card classification-card--plain" : "classification-card"}
+              data-section-semantic-key={section.semanticKey?.trim() || undefined}
             >
               {!hideSectionHeader ? (
                 <img
@@ -388,10 +435,18 @@ function GuidePanel({
       {activeTab.tables.map((table) => {
         const showTitle = table.title !== activeTab.panelTitle;
 
-        return table.displayMode === "cards" ? (
-          <CardTable key={table.id} table={table} showTitle={showTitle} />
-        ) : (
-          <DataTable key={table.id} table={table} showTitle={showTitle} />
+        return (
+          <div
+            key={table.id}
+            className="guide-table-semantic-wrap"
+            data-table-semantic-key={table.semanticKey?.trim() || undefined}
+          >
+            {table.displayMode === "cards" ? (
+              <CardTable table={table} showTitle={showTitle} />
+            ) : (
+              <DataTable table={table} showTitle={showTitle} />
+            )}
+          </div>
         );
       })}
 
@@ -494,11 +549,23 @@ export default function CategoryPage() {
     }
 
     if (supportsSubcategories) {
-      return subId ? (selectedSubcategory ? [selectedSubcategory.tab] : []) : tabsWithoutSubcategories;
+      if (!subId) {
+        return tabsWithoutSubcategories;
+      }
+      if (!selectedSubcategory) {
+        return [];
+      }
+      if (guide.category.slug === "destilados") {
+        return buildSpiritSubcategoryViewTabs(selectedSubcategory.tab);
+      }
+      return [selectedSubcategory.tab];
     }
 
     return tabs;
   }, [guide, selectedSubcategory, subId, supportsSubcategories, tabs, tabsWithoutSubcategories]);
+
+  const spiritDetailUsesSectionTabs =
+    category?.slug === "destilados" && Boolean(subId) && tabsToRender.length > 1;
 
   useEffect(() => {
     if (tabsToRender.length > 0 && !tabsToRender.some((tab) => tab.slug === activeTabSlug)) {
@@ -530,6 +597,19 @@ export default function CategoryPage() {
         <p className="status-message status-message--error">
           {error ?? "No se pudo cargar la categoría."}
         </p>
+      </article>
+    );
+  }
+
+  /** Tras cambiar de ruta, el primer render puede conservar la categoría anterior hasta que corre el efecto. */
+  const categoryMatchesRoute = category.slug === id;
+  if (!categoryMatchesRoute) {
+    return (
+      <article className="detail">
+        <Link to="/" className="detail__back">
+          ← Todas las categorías
+        </Link>
+        <p className="status-message">Cargando ficha...</p>
       </article>
     );
   }
@@ -626,7 +706,7 @@ export default function CategoryPage() {
                 tabs: tabsToRender,
               }}
               activeTabSlug={activeTabSlug}
-              compactSingleSection={Boolean(selectedSubcategory)}
+              compactSingleSection={Boolean(selectedSubcategory) && !spiritDetailUsesSectionTabs}
             />
           ) : supportsSubcategories ? (
             <p className="status-message status-message--error">

@@ -1157,6 +1157,18 @@
   min-width: 220px;
 }
 
+.admin-field--full {
+  grid-column: 1 / -1;
+}
+
+.admin-field__hint {
+  display: block;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(244, 235, 228, 0.55);
+}
+
 .admin-actions,
 .admin-toolbar {
   display: flex;
