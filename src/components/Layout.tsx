@@ -43,11 +43,14 @@ function getAperitifSubcategories(guide: GuideDetail | null): NavSubcategory[] {
 
   return guide.tabs
     .filter((tab) => isAperitifSubcategorySourceTabSlug(tab.slug))
-    .flatMap((tab) =>
-      tab.sections.map((section) => ({
-        slug: section.slug,
-        label: section.title,
-      })),
+    .flatMap((sourceTab) =>
+      sourceTab.sections.map((section) => {
+        const dedicatedTab = guide.tabs.find((t) => t.slug === section.slug);
+        return {
+          slug: section.slug,
+          label: dedicatedTab?.label ?? section.title,
+        };
+      }),
     );
 }
 

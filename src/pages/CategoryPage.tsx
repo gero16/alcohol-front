@@ -159,6 +159,13 @@ function isAperitifSubcategorySourceTabSlug(slug: string): boolean {
   return slug === "ejemplos" || slug === "marcas-y-estilos";
 }
 
+/** Secciones índice (tarjetas) bajo ejemplos / marcas-y-estilos; el slug puede enlazar a una pestaña propia. */
+function getAperitifSubcategorySourceSections(guide: GuideDetail) {
+  return guide.tabs
+    .filter((tab) => isAperitifSubcategorySourceTabSlug(tab.slug))
+    .flatMap((tab) => tab.sections);
+}
+
 function isWineSubcategorySourceTabSlug(slug: string): boolean {
   return slug === "estilos";
 }
@@ -207,24 +214,35 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
   if (guide.category.slug === "aperitivos") {
     return guide.tabs
       .filter((tab) => isAperitifSubcategorySourceTabSlug(tab.slug))
-      .flatMap((tab) =>
-        tab.sections.map((section) => ({
-          slug: section.slug,
-          label: section.title,
-          subtitle: section.subtitle,
-          imageUrl: section.imageUrl,
-          imageAlt: section.imageAlt,
-          previewText: section.paragraphs[0] ?? "",
-          tab: {
-            ...tab,
-            id: `${tab.id}-${section.id}`,
-            slug: `${tab.slug}-${section.slug}`,
-            label: section.title,
-            panelTitle: section.title,
-            sections: [section],
-            tables: [],
-          },
-        })),
+      .flatMap((sourceTab) =>
+        sourceTab.sections.map((section) => {
+          const dedicatedTab = guide.tabs.find((t) => t.slug === section.slug);
+          const fallbackTab =
+            sourceTab && !dedicatedTab
+              ? {
+                  ...sourceTab,
+                  id: `${sourceTab.id}-${section.id}`,
+                  slug: `${sourceTab.slug}-${section.slug}`,
+                  label: section.title,
+                  panelTitle: section.title,
+                  sections: [section],
+                  tables: [],
+                  classifications: [],
+                  noteTitle: undefined,
+                  noteContent: undefined,
+                }
+              : null;
+
+          return {
+            slug: section.slug,
+            label: dedicatedTab?.label ?? section.title,
+            subtitle: section.subtitle,
+            imageUrl: section.imageUrl,
+            imageAlt: section.imageAlt,
+            previewText: section.paragraphs[0] ?? "",
+            tab: dedicatedTab ?? fallbackTab ?? guide.tabs[0],
+          };
+        }),
       );
   }
 
@@ -242,6 +260,9 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
               panelTitle: section.title.replace(/^\d+\.\s*/, ""),
               sections: [section],
               tables: [],
+              classifications: [],
+              noteTitle: undefined,
+              noteContent: undefined,
             }
           : null;
 
@@ -276,6 +297,9 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
             panelTitle: section.title,
             sections: [section],
             tables: [],
+            classifications: [],
+            noteTitle: undefined,
+            noteContent: undefined,
           },
         })),
       );
@@ -308,7 +332,10 @@ function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
   }
 
   if (guide.category.slug === "aperitivos") {
-    return guide.tabs.filter((tab) => !isAperitifSubcategorySourceTabSlug(tab.slug));
+    const aperitifSubSlugs = new Set(getAperitifSubcategorySourceSections(guide).map((s) => s.slug));
+    return guide.tabs.filter(
+      (tab) => !isAperitifSubcategorySourceTabSlug(tab.slug) && !aperitifSubSlugs.has(tab.slug),
+    );
   }
 
   if (guide.category.slug === "vino") {
@@ -377,6 +404,71 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
     noteTitle: undefined,
     noteContent: undefined,
   }));
+
+  const extraTabs: GuideDetail["tabs"] = [];
+  if (unattachedTables.length > 0 || Boolean(noteBlock)) {
+    extraTabs.push({
+      ...rest,
+      id: `${tab.id}-extra`,
+      slug: `${tab.slug}__extra`,
+      label: "Tablas y notas",
+      panelTitle: panelTitle ?? "Tablas y notas",
+      semanticKey: undefined,
+      classifications: [],
+      sections: [],
+      tables: [...unattachedTables],
+      noteTitle,
+      noteContent,
+    });
+  }
+
+  return [...sectionTabs, ...classificationTabs, ...extraTabs];
+}
+
+/** En aperitivos, una subcategoría dedicada (p. ej. Aperol) puede tener varias secciones. */
+function buildAperitifSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): GuideDetail["tabs"] {
+  const { sections, tables, classifications, noteTitle, noteContent, panelTitle, ...rest } = tab;
+
+  if (sections.length <= 1) {
+    return [tab];
+  }
+
+  const unattachedTables = tables.filter((t) => !(t.sectionSlug && t.sectionSlug.trim().length > 0));
+  const noteBlock = noteContent?.trim();
+  const cls = classifications ?? [];
+  const hasVisibleClassifications = cls.some(classificationHasVisibleBlocks);
+
+  const sectionTabs: GuideDetail["tabs"] = sections.map((section) => ({
+    ...rest,
+    id: `${tab.id}-sec-${section.id}`,
+    slug: `${tab.slug}__sec__${section.slug}`,
+    label: section.title,
+    panelTitle: section.title,
+    semanticKey: section.semanticKey ?? rest.semanticKey,
+    classifications: [],
+    sections: [section],
+    tables: tables.filter((t) => t.sectionSlug?.trim() === section.slug),
+    noteTitle: undefined,
+    noteContent: undefined,
+  }));
+
+  const classificationTabs: GuideDetail["tabs"] = hasVisibleClassifications
+    ? [
+        {
+          ...rest,
+          id: `${tab.id}-clasificaciones`,
+          slug: `${tab.slug}__clasificaciones`,
+          label: "Clasificaciones",
+          panelTitle: "Clasificaciones",
+          semanticKey: undefined,
+          classifications: cls,
+          sections: [],
+          tables: [],
+          noteTitle: undefined,
+          noteContent: undefined,
+        },
+      ]
+    : [];
 
   const extraTabs: GuideDetail["tabs"] = [];
   if (unattachedTables.length > 0 || Boolean(noteBlock)) {
@@ -725,14 +817,16 @@ export default function CategoryPage() {
       if (guide.category.slug === "destilados") {
         return buildSpiritSubcategoryViewTabs(selectedSubcategory.tab);
       }
+      if (guide.category.slug === "aperitivos") {
+        return buildAperitifSubcategoryViewTabs(selectedSubcategory.tab);
+      }
       return [selectedSubcategory.tab];
     }
 
     return tabs;
   }, [guide, selectedSubcategory, subId, supportsSubcategories, tabs, tabsWithoutSubcategories]);
 
-  const spiritDetailUsesSectionTabs =
-    category?.slug === "destilados" && Boolean(subId) && tabsToRender.length > 1;
+  const subcategoryDetailUsesTabs = Boolean(selectedSubcategory) && tabsToRender.length > 1;
 
   useEffect(() => {
     if (tabsToRender.length > 0 && !tabsToRender.some((tab) => tab.slug === activeTabSlug)) {
@@ -873,7 +967,7 @@ export default function CategoryPage() {
                 tabs: tabsToRender,
               }}
               activeTabSlug={activeTabSlug}
-              compactSingleSection={Boolean(selectedSubcategory) && !spiritDetailUsesSectionTabs}
+              compactSingleSection={Boolean(selectedSubcategory) && !subcategoryDetailUsesTabs}
             />
           ) : supportsSubcategories ? (
             <p className="status-message status-message--error">
