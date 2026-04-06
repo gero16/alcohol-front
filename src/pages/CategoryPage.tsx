@@ -591,37 +591,7 @@ function SubcategoryChooser({
         : "Subcategorías de destilados";
 
   return (
-    <section className="detail__section">
-      <h2 className="section-title">{sectionTitle}</h2>
-      <div className="subcategory-grid">
-        {subcategories.map((subcategory) => {
-          const isActive = activeSubcategorySlug === subcategory.slug;
-
-          return (
-            <Link
-              key={subcategory.slug}
-              to={`/categoria/${guide.category.slug}/${subcategory.slug}`}
-              className={isActive ? "subcategory-card subcategory-card--active" : "subcategory-card"}
-            >
-              {subcategory.imageUrl ? (
-                <img
-                  className="subcategory-card__image"
-                  src={subcategory.imageUrl}
-                  alt={subcategory.imageAlt ?? subcategory.label}
-                  loading="lazy"
-                />
-              ) : null}
-              <h3 className="subcategory-card__title">{subcategory.label}</h3>
-              {subcategory.subtitle ? (
-                <p className="subcategory-card__subtitle">{subcategory.subtitle}</p>
-              ) : null}
-              <p className="subcategory-card__text">{subcategory.previewText}</p>
-              <span className="subcategory-card__link">Ver ficha</span>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
+    <> </>
   );
 }
 

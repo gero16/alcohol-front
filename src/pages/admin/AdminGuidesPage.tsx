@@ -147,6 +147,13 @@ function moveItem<T>(items: T[], from: number, to: number): T[] {
   return next;
 }
 
+function insertItem<T>(items: T[], index: number, item: T): T[] {
+  const safeIndex = Math.max(0, Math.min(index, items.length));
+  const next = [...items];
+  next.splice(safeIndex, 0, item);
+  return next;
+}
+
 function emptyToUndefined(value?: string): string | undefined {
   const nextValue = value?.trim() ?? "";
   return nextValue.length > 0 ? nextValue : undefined;
@@ -1095,50 +1102,52 @@ export default function AdminGuidesPage() {
                                         <h5 className="admin-subsection__title">
                                           Contenido (orden en la ficha pública)
                                         </h5>
-                                        <div className="admin-toolbar">
-                                          <button
-                                            type="button"
-                                            className="admin-button admin-button--secondary"
-                                            onClick={() =>
-                                              updateGuide((draft) => {
-                                                draft.tabs[tabIndex].classifications[
-                                                  activeClassificationIndex
-                                                ].blocks.push(createClassificationBlock("subtitle"));
-                                              })
-                                            }
-                                          >
-                                            + Subtítulo
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="admin-button admin-button--secondary"
-                                            onClick={() =>
-                                              updateGuide((draft) => {
-                                                draft.tabs[tabIndex].classifications[
-                                                  activeClassificationIndex
-                                                ].blocks.push(createClassificationBlock("paragraph"));
-                                              })
-                                            }
-                                          >
-                                            + Párrafo
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="admin-button admin-button--secondary"
-                                            onClick={() =>
-                                              updateGuide((draft) => {
-                                                draft.tabs[tabIndex].classifications[
-                                                  activeClassificationIndex
-                                                ].blocks.push(createClassificationBlock("image"));
-                                              })
-                                            }
-                                          >
-                                            + Imagen
-                                          </button>
-                                        </div>
                                       </div>
 
                                       <div className="admin-stack">
+                                        {activeClassification.blocks.length === 0 ? (
+                                          <div className="admin-toolbar">
+                                            <button
+                                              type="button"
+                                              className="admin-button admin-button--secondary"
+                                              onClick={() =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].classifications[
+                                                    activeClassificationIndex
+                                                  ].blocks.push(createClassificationBlock("subtitle"));
+                                                })
+                                              }
+                                            >
+                                              + Subtítulo
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="admin-button admin-button--secondary"
+                                              onClick={() =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].classifications[
+                                                    activeClassificationIndex
+                                                  ].blocks.push(createClassificationBlock("paragraph"));
+                                                })
+                                              }
+                                            >
+                                              + Párrafo
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="admin-button admin-button--secondary"
+                                              onClick={() =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].classifications[
+                                                    activeClassificationIndex
+                                                  ].blocks.push(createClassificationBlock("image"));
+                                                })
+                                              }
+                                            >
+                                              + Imagen
+                                            </button>
+                                          </div>
+                                        ) : null}
                                         {activeClassification.blocks.map((block, blockIndex) => (
                                           <div key={blockIndex} className="admin-row-card">
                                             <div className="admin-toolbar">
@@ -1277,6 +1286,72 @@ export default function AdminGuidesPage() {
                                                 </label>
                                               </div>
                                             ) : null}
+                                            <div className="admin-toolbar">
+                                              <span>Insertar debajo:</span>
+                                              <button
+                                                type="button"
+                                                className="admin-button admin-button--secondary"
+                                                onClick={() =>
+                                                  updateGuide((draft) => {
+                                                    const currentBlocks =
+                                                      draft.tabs[tabIndex].classifications[
+                                                        activeClassificationIndex
+                                                      ].blocks;
+                                                    draft.tabs[tabIndex].classifications[
+                                                      activeClassificationIndex
+                                                    ].blocks = insertItem(
+                                                      currentBlocks,
+                                                      blockIndex + 1,
+                                                      createClassificationBlock("subtitle"),
+                                                    );
+                                                  })
+                                                }
+                                              >
+                                                + Subtítulo
+                                              </button>
+                                              <button
+                                                type="button"
+                                                className="admin-button admin-button--secondary"
+                                                onClick={() =>
+                                                  updateGuide((draft) => {
+                                                    const currentBlocks =
+                                                      draft.tabs[tabIndex].classifications[
+                                                        activeClassificationIndex
+                                                      ].blocks;
+                                                    draft.tabs[tabIndex].classifications[
+                                                      activeClassificationIndex
+                                                    ].blocks = insertItem(
+                                                      currentBlocks,
+                                                      blockIndex + 1,
+                                                      createClassificationBlock("paragraph"),
+                                                    );
+                                                  })
+                                                }
+                                              >
+                                                + Párrafo
+                                              </button>
+                                              <button
+                                                type="button"
+                                                className="admin-button admin-button--secondary"
+                                                onClick={() =>
+                                                  updateGuide((draft) => {
+                                                    const currentBlocks =
+                                                      draft.tabs[tabIndex].classifications[
+                                                        activeClassificationIndex
+                                                      ].blocks;
+                                                    draft.tabs[tabIndex].classifications[
+                                                      activeClassificationIndex
+                                                    ].blocks = insertItem(
+                                                      currentBlocks,
+                                                      blockIndex + 1,
+                                                      createClassificationBlock("image"),
+                                                    );
+                                                  })
+                                                }
+                                              >
+                                                + Imagen
+                                              </button>
+                                            </div>
                                           </div>
                                         ))}
                                       </div>
