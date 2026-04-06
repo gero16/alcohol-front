@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { getCategories, getGuideByCategorySlug } from "../api/client";
 import type { Category, GuideDetail, GuideTab } from "../api/types";
 
@@ -98,12 +98,15 @@ function getLiqueurSubcategories(guide: GuideDetail | null): NavSubcategory[] {
 }
 
 export default function Layout() {
+  const location = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [distillateTabs, setDistillateTabs] = useState<GuideTab[]>([]);
   const [wineSubcategories, setWineSubcategories] = useState<NavSubcategory[]>([]);
   const [beerSubcategories, setBeerSubcategories] = useState<NavSubcategory[]>([]);
   const [aperitifSubcategories, setAperitifSubcategories] = useState<NavSubcategory[]>([]);
   const [liqueurSubcategories, setLiqueurSubcategories] = useState<NavSubcategory[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedCategorySlug, setExpandedCategorySlug] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -146,18 +149,41 @@ export default function Layout() {
     };
   }, []);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setExpandedCategorySlug(null);
+  }, [location.pathname]);
+
+  function handleNavLinkClick() {
+    setIsMobileMenuOpen(false);
+    setExpandedCategorySlug(null);
+  }
+
   return (
     <div className="layout">
       <nav className="nav" aria-label="Principal">
-        <NavLink to="/" className="nav__brand" end>
+        <NavLink to="/" className="nav__brand" end onClick={handleNavLinkClick}>
           Alcoholes
         </NavLink>
+        <button
+          type="button"
+          className="nav__menu-button"
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="main-navigation-links"
+          onClick={() => setIsMobileMenuOpen((open) => !open)}
+        >
+          {isMobileMenuOpen ? "Cerrar" : "Menú"}
+        </button>
         {categories.length > 0 ? (
-          <div className="nav__categories" aria-label="Categorías de alcoholes">
+          <div
+            id="main-navigation-links"
+            className={`nav__categories ${isMobileMenuOpen ? "nav__categories--open" : ""}`}
+            aria-label="Categorías de alcoholes"
+          >
             <p className="nav__eyebrow">Navegación</p>
             <ul className="nav__links nav__links--categories">
               <li className="nav__item">
-                <NavLink to="/" className="nav__link" end>
+                <NavLink to="/" className="nav__link" end onClick={handleNavLinkClick}>
                   Inicio
                 </NavLink>
               </li>
@@ -188,12 +214,33 @@ export default function Layout() {
                     key={category.id}
                     className={submenuItems.length > 0 ? "nav__item nav__item--has-children" : "nav__item"}
                   >
-                    <NavLink to={`/categoria/${category.slug}`} className="nav__link">
-                      {category.title}
-                    </NavLink>
+                    <div className="nav__item-row">
+                      <NavLink
+                        to={`/categoria/${category.slug}`}
+                        className="nav__link"
+                        onClick={handleNavLinkClick}
+                      >
+                        {category.title}
+                      </NavLink>
+                      {submenuItems.length > 0 ? (
+                        <button
+                          type="button"
+                          className="nav__submenu-toggle"
+                          aria-expanded={expandedCategorySlug === category.slug}
+                          aria-label={`Mostrar subcategorías de ${category.title}`}
+                          onClick={() =>
+                            setExpandedCategorySlug((current) =>
+                              current === category.slug ? null : category.slug,
+                            )
+                          }
+                        >
+                          {expandedCategorySlug === category.slug ? "−" : "+"}
+                        </button>
+                      ) : null}
+                    </div>
                     {submenuItems.length > 0 ? (
                       <ul
-                        className="nav__submenu"
+                        className={`nav__submenu ${expandedCategorySlug === category.slug ? "nav__submenu--open" : ""}`}
                         aria-label={
                           isDistillates
                             ? "Subcategorías de destilados"
@@ -211,6 +258,7 @@ export default function Layout() {
                             <NavLink
                               to={`/categoria/${category.slug}/${item.slug}`}
                               className="nav__sublink"
+                              onClick={handleNavLinkClick}
                             >
                               {item.label}
                             </NavLink>
@@ -222,12 +270,12 @@ export default function Layout() {
                 );
               })}
               <li className="nav__item">
-                <NavLink to="/glosario" className="nav__link">
+                <NavLink to="/glosario" className="nav__link" onClick={handleNavLinkClick}>
                   Glosario
                 </NavLink>
               </li>
               <li className="nav__item">
-                <NavLink to="/consumo-responsable" className="nav__link">
+                <NavLink to="/consumo-responsable" className="nav__link" onClick={handleNavLinkClick}>
                   Consumo responsable
                 </NavLink>
               </li>

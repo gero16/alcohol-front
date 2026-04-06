@@ -27,6 +27,18 @@
   color: var(--accent);
 }
 
+.nav__menu-button {
+  display: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(244, 235, 228, 0.03);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+}
+
 .nav__links {
   display: flex;
   flex-wrap: wrap;
@@ -60,6 +72,24 @@
 
 .nav__item {
   position: relative;
+}
+
+.nav__item-row {
+  display: flex;
+  align-items: center;
+}
+
+.nav__submenu-toggle {
+  display: none;
+  min-width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 /* Puente invisible: el cursor puede bajar al submenú sin salir del ítem (evita el “hueco” que lo cierra). */
@@ -1370,6 +1400,65 @@
 }
 
 @media (max-width: 640px) {
+  .nav {
+    align-items: flex-start;
+  }
+
+  .nav__menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+
+  .nav__categories {
+    display: none;
+    width: 100%;
+    padding-top: 0.75rem;
+  }
+
+  .nav__categories--open {
+    display: block;
+  }
+
+  .nav__eyebrow {
+    margin-bottom: 0.85rem;
+  }
+
+  .nav__links--categories {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .nav__item {
+    width: 100%;
+  }
+
+  .nav__item-row {
+    gap: 0.45rem;
+  }
+
+  .nav__link {
+    display: block;
+    width: 100%;
+    padding: 0.62rem 0.8rem;
+  }
+
+  .nav__submenu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border-color: var(--border);
+    background: rgba(244, 235, 228, 0.02);
+  }
+
+  .nav__item--has-children:hover .nav__submenu,
+  .nav__item--has-children:focus-within .nav__submenu {
+    display: none;
+  }
+
   .nav__item--has-children::before {
     display: none;
   }
@@ -1435,10 +1524,14 @@
 
   .nav__submenu {
     position: static;
-    display: grid;
+    display: none;
     min-width: 100%;
     margin-top: 0.3rem;
     box-shadow: none;
+  }
+
+  .nav__submenu--open {
+    display: grid;
   }
 
   .wine-tabs__button {
