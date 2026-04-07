@@ -1,5 +1,5 @@
 .layout {
-  max-width: 960px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 2.5rem 1.25rem 4rem;
 }
@@ -934,6 +934,15 @@
 
 .summary-table td {
   color: var(--text-muted);
+}
+
+.summary-table__thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
 }
 
 .summary-table tbody tr:last-child td {

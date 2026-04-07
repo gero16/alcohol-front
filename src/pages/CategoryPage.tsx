@@ -546,12 +546,15 @@ function getRowValue(row: GuideTableRow, column: GuideTableColumn): string {
 }
 
 function DataTable({ table, showTitle = true }: { table: GuideTable; showTitle?: boolean }) {
+  const hasRowImages = table.rows.some((row) => Boolean(row.imageUrl?.trim()));
+
   return (
     <div className="summary-table-wrap">
       {showTitle ? <h3 className="detail__subheading">{table.title}</h3> : null}
       <table className="summary-table">
         <thead>
           <tr>
+            {hasRowImages ? <th>Imagen</th> : null}
             {table.columns.map((column) => (
               <th key={column.key}>{column.label}</th>
             ))}
@@ -560,6 +563,20 @@ function DataTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
         <tbody>
           {table.rows.map((row) => (
             <tr key={row.id}>
+              {hasRowImages ? (
+                <td data-label="Imagen">
+                  {row.imageUrl ? (
+                    <img
+                      className="summary-table__thumb"
+                      src={row.imageUrl}
+                      alt={row.imageAlt ?? row.term}
+                      loading="lazy"
+                    />
+                  ) : (
+                    "Sin imagen"
+                  )}
+                </td>
+              ) : null}
               {table.columns.map((column) => (
                 <td key={`${row.id}-${column.key}`} data-label={column.label}>
                   <GlossaryText text={getRowValue(row, column)} />
@@ -718,6 +735,7 @@ function GuidePanel({
 
       {activeTab.tables.map((table) => {
         const showTitle = table.title !== activeTab.panelTitle;
+        const shouldRenderAsTableWithThumbs = table.rows.some((row) => Boolean(row.imageUrl?.trim()));
 
         return (
           <div
@@ -725,7 +743,7 @@ function GuidePanel({
             className="guide-table-semantic-wrap"
             data-table-semantic-key={table.semanticKey?.trim() || undefined}
           >
-            {table.displayMode === "cards" ? (
+            {table.displayMode === "cards" && !shouldRenderAsTableWithThumbs ? (
               <CardTable table={table} showTitle={showTitle} />
             ) : (
               <DataTable table={table} showTitle={showTitle} />
