@@ -22,6 +22,7 @@ import type {
 import { GUIDE_SEMANTIC_SELECT_OPTIONS, isGuideSemanticKey } from "../../guideSemantics";
 
 type GuideEditorBlock = "general" | "note" | "classifications" | "sections" | "tables";
+const CLASSIFICATIONS_TABLE_LOCATION = "__clasificaciones__";
 
 function createClassificationBlock(kind: GuideClassificationBlock["kind"]): GuideClassificationBlock {
   switch (kind) {
@@ -65,6 +66,8 @@ const tableColumnOptions: Array<GuideTableColumn["key"]> = [
   "reference",
   "abv",
 ];
+const INVALID_TABLE_SECTION_MESSAGE =
+  "Una tabla referencia un slug de sección que no existe en su pestaña. Revisa el campo «Sección» en el admin.";
 
 function createEmptyGuide(category?: Category): GuideInput {
   return {
@@ -264,6 +267,28 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
   };
 }
 
+function dropUnsupportedTableSectionHints(guide: GuideInput): GuideInput {
+  return {
+    ...guide,
+    tabs: guide.tabs.map((tab) => {
+      const validSectionSlugs = new Set(tab.sections.map((s) => s.slug.trim()).filter(Boolean));
+      return {
+        ...tab,
+        tables: tab.tables.map((table) => {
+          const hint = table.sectionSlug?.trim();
+          if (!hint || validSectionSlugs.has(hint)) {
+            return table;
+          }
+          return {
+            ...table,
+            sectionSlug: undefined,
+          };
+        }),
+      };
+    }),
+  };
+}
+
 function validateGuide(guide: GuideInput): string | null {
   if (guide.title.trim().length === 0 || guide.type.trim().length === 0) {
     return "La guia necesita titulo y tipo.";
@@ -329,6 +354,12 @@ function validateGuide(guide: GuideInput): string | null {
 
     const tableSlugs = new Set<string>();
     const sectionSlugSet = new Set(tab.sections.map((s) => s.slug.trim()).filter(Boolean));
+    const hasVisibleClassifications = (tab.classifications ?? []).some(
+      (c) => sanitizeClassificationBlocks(c.blocks ?? []).length > 0,
+    );
+    if (hasVisibleClassifications) {
+      sectionSlugSet.add(CLASSIFICATIONS_TABLE_LOCATION);
+    }
     for (const [tableIndex, table] of tab.tables.entries()) {
       if (table.slug.trim().length === 0 || table.title.trim().length === 0) {
         return `La tabla ${tableIndex + 1} de la pestaña ${tab.label || tab.slug} necesita slug y titulo.`;
@@ -569,6 +600,26 @@ export default function AdminGuidesPage() {
       await loadMetadata(selectedCategorySlug);
     } catch (err) {
       if (err instanceof ApiError) {
+        if (err.message === INVALID_TABLE_SECTION_MESSAGE) {
+          try {
+            const compatibilityGuide = dropUnsupportedTableSectionHints(normalizedGuide);
+            const savedGuide = await saveGuide(selectedCategorySlug, compatibilityGuide);
+            setGuide(guideDetailToInput(savedGuide));
+            setFeedback(
+              "Guia guardada con compatibilidad: se limpiaron ubicaciones de tabla no soportadas por el backend actual.",
+            );
+            setDirty(false);
+            await loadMetadata(selectedCategorySlug);
+            return;
+          } catch (compatErr) {
+            if (compatErr instanceof ApiError) {
+              setError(compatErr.message);
+            } else {
+              setError(compatErr instanceof Error ? compatErr.message : "No se pudo guardar la guia.");
+            }
+            return;
+          }
+        }
         setError(err.message);
       } else {
         setError(err instanceof Error ? err.message : "No se pudo guardar la guia.");
@@ -1768,9 +1819,14 @@ export default function AdminGuidesPage() {
                                           })
                                         }
                                       >
-                                        <option value="">
-                                          Al final: pestaña «Tablas y notas»
-                                        </option>
+                                        <option value="">Al final: pestaña «Tablas y notas»</option>
+                                        {(tab.classifications ?? []).some(
+                                          (c) => sanitizeClassificationBlocks(c.blocks ?? []).length > 0,
+                                        ) ? (
+                                          <option value={CLASSIFICATIONS_TABLE_LOCATION}>
+                                            Junto a: Clasificaciones
+                                          </option>
+                                        ) : null}
                                         {tab.sections.map((section) => (
                                           <option key={section.slug} value={section.slug.trim()}>
                                             Junto a: {section.title.trim() || section.slug}
@@ -1779,7 +1835,8 @@ export default function AdminGuidesPage() {
                                       </select>
                                       <small className="admin-field__hint">
                                         Si eliges una sección, la tabla se verá en esa pestaña (como en vino). Si la
-                                        dejas en «Tablas y notas», se agrupa al final.
+                                        dejas en «Tablas y notas», se agrupa al final. Puedes ubicarla también junto a
+                                        «Clasificaciones» cuando la pestaña tenga contenido de clasificación.
                                       </small>
                                     </label>
                                   ) : null}

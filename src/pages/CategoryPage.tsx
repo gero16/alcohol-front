@@ -12,6 +12,8 @@ import type {
 } from "../api/types";
 import { GlossaryText } from "../glossary";
 
+const CLASSIFICATIONS_TABLE_LOCATION = "__clasificaciones__";
+
 function classificationHasVisibleBlocks(c: GuideClassification): boolean {
   return (c.blocks ?? []).some((piece) => {
     if (piece.kind === "subtitle" || piece.kind === "paragraph") {
@@ -369,11 +371,15 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
   }
 
   const unattachedTables = tables.filter((t) => !(t.sectionSlug && t.sectionSlug.trim().length > 0));
+  const classificationScopedTables = tables.filter(
+    (t) => t.sectionSlug?.trim() === CLASSIFICATIONS_TABLE_LOCATION,
+  );
   const noteBlock = noteContent?.trim();
   const cls = classifications ?? [];
   const hasVisibleClassifications = cls.some(classificationHasVisibleBlocks);
+  const hasClassificationTabContent = hasVisibleClassifications || classificationScopedTables.length > 0;
 
-  const classificationTabs: GuideDetail["tabs"] = hasVisibleClassifications
+  const classificationTabs: GuideDetail["tabs"] = hasClassificationTabContent
     ? [
         {
           ...rest,
@@ -384,7 +390,7 @@ function buildSpiritSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Guide
           semanticKey: undefined,
           classifications: cls,
           sections: [],
-          tables: [],
+          tables: classificationScopedTables,
           noteTitle: undefined,
           noteContent: undefined,
         },
@@ -434,9 +440,13 @@ function buildAperitifSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Gui
   }
 
   const unattachedTables = tables.filter((t) => !(t.sectionSlug && t.sectionSlug.trim().length > 0));
+  const classificationScopedTables = tables.filter(
+    (t) => t.sectionSlug?.trim() === CLASSIFICATIONS_TABLE_LOCATION,
+  );
   const noteBlock = noteContent?.trim();
   const cls = classifications ?? [];
   const hasVisibleClassifications = cls.some(classificationHasVisibleBlocks);
+  const hasClassificationTabContent = hasVisibleClassifications || classificationScopedTables.length > 0;
 
   const sectionTabs: GuideDetail["tabs"] = sections.map((section) => ({
     ...rest,
@@ -452,7 +462,7 @@ function buildAperitifSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Gui
     noteContent: undefined,
   }));
 
-  const classificationTabs: GuideDetail["tabs"] = hasVisibleClassifications
+  const classificationTabs: GuideDetail["tabs"] = hasClassificationTabContent
     ? [
         {
           ...rest,
@@ -463,7 +473,7 @@ function buildAperitifSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Gui
           semanticKey: undefined,
           classifications: cls,
           sections: [],
-          tables: [],
+          tables: classificationScopedTables,
           noteTitle: undefined,
           noteContent: undefined,
         },
@@ -568,27 +578,14 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
 
 function SubcategoryChooser({
   guide,
-  activeSubcategorySlug,
 }: {
   guide: GuideDetail;
-  activeSubcategorySlug?: string;
 }) {
   const subcategories = getGuideSubcategories(guide);
 
   if (subcategories.length === 0) {
     return null;
   }
-
-  const sectionTitle =
-    guide.category.slug === "aperitivos"
-      ? "Subcategorías de aperitivos"
-      : guide.category.slug === "vino"
-        ? "Subcategorías de vinos"
-      : guide.category.slug === "cerveza"
-        ? "Subcategorías de cervezas"
-      : guide.category.slug === "licores"
-        ? "Subcategorías de licores"
-        : "Subcategorías de destilados";
 
   return (
     <> </>
@@ -880,7 +877,7 @@ export default function CategoryPage() {
       ) : null}
 
       {guide && supportsSubcategories && !subId ? (
-        <SubcategoryChooser guide={guide} activeSubcategorySlug={subId} />
+        <SubcategoryChooser guide={guide} />
       ) : null}
 
       {guide && supportsSubcategories && subId ? (
