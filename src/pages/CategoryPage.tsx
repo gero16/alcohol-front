@@ -13,6 +13,46 @@ import type {
 import { GlossaryText } from "../glossary";
 
 const CLASSIFICATIONS_TABLE_LOCATION = "__clasificaciones__";
+const SECTION_CONTENT_SUBTITLE_PREFIX = "__subtitle__:";
+
+type SectionContentBlock = {
+  kind: "subtitle" | "paragraph";
+  text: string;
+};
+
+function parseSectionContentBlock(raw: string): SectionContentBlock | null {
+  const value = raw.trim();
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith(SECTION_CONTENT_SUBTITLE_PREFIX)) {
+    const text = value.slice(SECTION_CONTENT_SUBTITLE_PREFIX.length).trim();
+    if (!text) {
+      return null;
+    }
+    return { kind: "subtitle", text };
+  }
+
+  return { kind: "paragraph", text: value };
+}
+
+function getSectionPreviewText(paragraphs: string[]): string {
+  let firstSubtitle = "";
+  for (const paragraph of paragraphs) {
+    const block = parseSectionContentBlock(paragraph);
+    if (!block) {
+      continue;
+    }
+    if (block.kind === "paragraph") {
+      return block.text;
+    }
+    if (!firstSubtitle) {
+      firstSubtitle = block.text;
+    }
+  }
+  return firstSubtitle;
+}
 
 function classificationHasVisibleBlocks(c: GuideClassification): boolean {
   return (c.blocks ?? []).some((piece) => {
@@ -207,7 +247,7 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
           subtitle: previewSection?.subtitle,
           imageUrl: previewSection?.imageUrl,
           imageAlt: previewSection?.imageAlt,
-          previewText: previewSection?.paragraphs[0] ?? tab.noteContent ?? "",
+          previewText: previewSection ? getSectionPreviewText(previewSection.paragraphs) : tab.noteContent ?? "",
           tab,
         };
       });
@@ -241,7 +281,7 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
             subtitle: section.subtitle,
             imageUrl: section.imageUrl,
             imageAlt: section.imageAlt,
-            previewText: section.paragraphs[0] ?? "",
+            previewText: getSectionPreviewText(section.paragraphs),
             tab: dedicatedTab ?? fallbackTab ?? guide.tabs[0],
           };
         }),
@@ -274,7 +314,7 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
         subtitle: section.subtitle,
         imageUrl: section.imageUrl,
         imageAlt: section.imageAlt,
-        previewText: section.paragraphs[0] ?? "",
+        previewText: getSectionPreviewText(section.paragraphs),
         tab: dedicatedTab ?? fallbackTab ?? guide.tabs[0],
       };
     });
@@ -290,7 +330,7 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
           subtitle: section.subtitle,
           imageUrl: section.imageUrl,
           imageAlt: section.imageAlt,
-          previewText: section.paragraphs[0] ?? "",
+          previewText: getSectionPreviewText(section.paragraphs),
           tab: {
             ...tab,
             id: `${tab.id}-${section.id}`,
@@ -319,7 +359,7 @@ function getGuideSubcategories(guide: GuideDetail): GuideSubcategory[] {
           subtitle: previewSection?.subtitle,
           imageUrl: previewSection?.imageUrl,
           imageAlt: previewSection?.imageAlt,
-          previewText: previewSection?.paragraphs[0] ?? tab.noteContent ?? "",
+          previewText: previewSection ? getSectionPreviewText(previewSection.paragraphs) : tab.noteContent ?? "",
           tab,
         };
       });
@@ -349,7 +389,7 @@ function getTabsWithoutSubcategories(guide: GuideDetail): GuideDetail["tabs"] {
   }
 
   if (guide.category.slug === "cerveza") {
-    return guide.tabs.filter((tab) => !isBeerSubcategorySourceTabSlug(tab.slug));
+    return guide.tabs;
   }
 
   if (guide.category.slug === "licores") {
@@ -534,6 +574,14 @@ function DataTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
 }
 
 function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?: boolean }) {
+  const renderField = (label: string, value?: string, isReference = false) =>
+    value ? (
+      <p className={isReference ? "classification-card__reference" : "classification-card__text"}>
+        <strong>{label}: </strong>
+        <GlossaryText text={value} />
+      </p>
+    ) : null;
+
   return (
     <div className="summary-table-wrap">
       {showTitle ? <h3 className="detail__subheading">{table.title}</h3> : null}
@@ -549,26 +597,23 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
               />
             ) : null}
             <h3 className="classification-card__title">{row.term}</h3>
-            {row.description ? (
-              <p className="classification-card__text">
-                <GlossaryText text={row.description} />
-              </p>
-            ) : null}
-            {row.composition ? (
-              <p className="classification-card__text">
-                <GlossaryText text={row.composition} />
-              </p>
-            ) : null}
-            {row.objective ? (
-              <p className="classification-card__text">
-                <GlossaryText text={row.objective} />
-              </p>
-            ) : null}
-            {row.reference ? (
-              <p className="classification-card__reference">
-                <GlossaryText text={row.reference} />
-              </p>
-            ) : null}
+            {renderField("Ageing / Maturation", row.ageingMaturation)}
+            {renderField("Distillation Method", row.distillationMethod)}
+            {renderField("Perfil / Caracter", row.profileCharacter)}
+            {renderField("Body", row.body)}
+            {renderField("Intensidad", row.intensity)}
+            {renderField("Bitterness (IBU)", row.bitternessIbu)}
+            {renderField("Description", row.description)}
+            {renderField("Finish", row.finish)}
+            {renderField("Region / Origin", row.regionOrigin)}
+            {renderField("Visual / Color", row.visualColor)}
+            {renderField("Tannins", row.tannins)}
+            {renderField("Acidity", row.acidity)}
+            {renderField("Composicion", row.composition)}
+            {renderField("Objetivo", row.objective)}
+            {renderField("ABV", row.abv)}
+            {renderField("Reference", row.reference, true)}
+            {renderField("Ejemplos", row.examples, true)}
           </article>
         ))}
       </div>
@@ -647,11 +692,24 @@ function GuidePanel({
                   <GlossaryText text={section.subtitle} />
                 </p>
               ) : null}
-              {section.paragraphs.map((paragraph) => (
-                <p key={paragraph} className="classification-card__text">
-                  <GlossaryText text={paragraph} />
-                </p>
-              ))}
+              {section.paragraphs.map((paragraph, idx) => {
+                const block = parseSectionContentBlock(paragraph);
+                if (!block) {
+                  return null;
+                }
+                if (block.kind === "subtitle") {
+                  return (
+                    <p key={`${section.id}-subtitle-${idx}`} className="classification-card__subtitle classification-card__subtitle--inline">
+                      <GlossaryText text={block.text} />
+                    </p>
+                  );
+                }
+                return (
+                  <p key={`${section.id}-paragraph-${idx}`} className="classification-card__text">
+                    <GlossaryText text={block.text} />
+                  </p>
+                );
+              })}
             </article>
             );
           })}

@@ -65,9 +65,39 @@ const tableColumnOptions: Array<GuideTableColumn["key"]> = [
   "description",
   "reference",
   "abv",
+  "ageingMaturation",
+  "distillationMethod",
+  "profileCharacter",
+  "body",
+  "intensity",
+  "bitternessIbu",
+  "finish",
+  "regionOrigin",
+  "visualColor",
+  "tannins",
+  "acidity",
+  "examples",
 ];
 const INVALID_TABLE_SECTION_MESSAGE =
   "Una tabla referencia un slug de sección que no existe en su pestaña. Revisa el campo «Sección» en el admin.";
+const SECTION_CONTENT_SUBTITLE_PREFIX = "__subtitle__:";
+
+function isSectionContentSubtitleLine(value: string): boolean {
+  return value.trimStart().startsWith(SECTION_CONTENT_SUBTITLE_PREFIX);
+}
+
+function getSectionContentEditableText(value: string): string {
+  const trimmedStart = value.trimStart();
+  if (!trimmedStart.startsWith(SECTION_CONTENT_SUBTITLE_PREFIX)) {
+    return value;
+  }
+  return trimmedStart.slice(SECTION_CONTENT_SUBTITLE_PREFIX.length).trimStart();
+}
+
+function toSectionContentSubtitle(value: string): string {
+  const text = value.trim();
+  return `${SECTION_CONTENT_SUBTITLE_PREFIX}${text}`;
+}
 
 function createEmptyGuide(category?: Category): GuideInput {
   return {
@@ -134,6 +164,18 @@ function createEmptyRow(): GuideTableRowInput {
     description: "",
     reference: "",
     abv: "",
+    ageingMaturation: "",
+    distillationMethod: "",
+    profileCharacter: "",
+    body: "",
+    intensity: "",
+    bitternessIbu: "",
+    finish: "",
+    regionOrigin: "",
+    visualColor: "",
+    tannins: "",
+    acidity: "",
+    examples: "",
     imageUrl: "",
     imageAlt: "",
   };
@@ -204,6 +246,18 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
           description: row.description ?? "",
           reference: row.reference ?? "",
           abv: row.abv ?? "",
+          ageingMaturation: row.ageingMaturation ?? "",
+          distillationMethod: row.distillationMethod ?? "",
+          profileCharacter: row.profileCharacter ?? "",
+          body: row.body ?? "",
+          intensity: row.intensity ?? "",
+          bitternessIbu: row.bitternessIbu ?? "",
+          finish: row.finish ?? "",
+          regionOrigin: row.regionOrigin ?? "",
+          visualColor: row.visualColor ?? "",
+          tannins: row.tannins ?? "",
+          acidity: row.acidity ?? "",
+          examples: row.examples ?? "",
           imageUrl: row.imageUrl ?? "",
           imageAlt: row.imageAlt ?? "",
         })),
@@ -259,6 +313,18 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
           description: emptyToUndefined(row.description),
           reference: emptyToUndefined(row.reference),
           abv: emptyToUndefined(row.abv),
+          ageingMaturation: emptyToUndefined(row.ageingMaturation),
+          distillationMethod: emptyToUndefined(row.distillationMethod),
+          profileCharacter: emptyToUndefined(row.profileCharacter),
+          body: emptyToUndefined(row.body),
+          intensity: emptyToUndefined(row.intensity),
+          bitternessIbu: emptyToUndefined(row.bitternessIbu),
+          finish: emptyToUndefined(row.finish),
+          regionOrigin: emptyToUndefined(row.regionOrigin),
+          visualColor: emptyToUndefined(row.visualColor),
+          tannins: emptyToUndefined(row.tannins),
+          acidity: emptyToUndefined(row.acidity),
+          examples: emptyToUndefined(row.examples),
           imageUrl: emptyToUndefined(row.imageUrl),
           imageAlt: emptyToUndefined(row.imageAlt),
         })),
@@ -1625,25 +1691,65 @@ export default function AdminGuidesPage() {
                                 <div className="admin-subsection">
                                   <div className="admin-panel__header">
                                     <h5 className="admin-subsection__title">Parrafos</h5>
-                                    <button
-                                      type="button"
-                                      className="admin-button admin-button--secondary"
-                                      onClick={() =>
-                                        updateGuide((draft) => {
-                                          draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs.push("");
-                                        })
-                                      }
-                                    >
-                                      Agregar parrafo
-                                    </button>
+                                    <div className="admin-toolbar">
+                                      <button
+                                        type="button"
+                                        className="admin-button admin-button--secondary"
+                                        onClick={() =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs.push("");
+                                          })
+                                        }
+                                      >
+                                        Agregar parrafo
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="admin-button admin-button--secondary"
+                                        onClick={() =>
+                                          updateGuide((draft) => {
+                                            draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs.push(
+                                              `${SECTION_CONTENT_SUBTITLE_PREFIX}`,
+                                            );
+                                          })
+                                        }
+                                      >
+                                        Agregar subtitulo de contenido
+                                      </button>
+                                    </div>
                                   </div>
 
                                   <div className="admin-stack">
                                     {activeSection.paragraphs.map((paragraph, paragraphIndex) => (
                                       <div key={paragraphIndex} className="admin-row-card">
                                         <div className="admin-toolbar">
-                                          <strong>Parrafo {paragraphIndex + 1}</strong>
+                                          <strong>
+                                            {isSectionContentSubtitleLine(paragraph)
+                                              ? `Subtitulo ${paragraphIndex + 1}`
+                                              : `Parrafo ${paragraphIndex + 1}`}
+                                          </strong>
                                           <div className="admin-toolbar__spacer" />
+                                          <button
+                                            type="button"
+                                            className="admin-button admin-button--ghost"
+                                            onClick={() =>
+                                              updateGuide((draft) => {
+                                                const current =
+                                                  draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs[
+                                                    paragraphIndex
+                                                  ] ?? "";
+                                                draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs[
+                                                  paragraphIndex
+                                                ] = isSectionContentSubtitleLine(current)
+                                                  ? getSectionContentEditableText(current)
+                                                  : toSectionContentSubtitle(current);
+                                              })
+                                            }
+                                          >
+                                            {isSectionContentSubtitleLine(paragraph)
+                                              ? "Convertir a parrafo"
+                                              : "Convertir a subtitulo"}
+                                          </button>
                                           <button
                                             type="button"
                                             className="admin-button admin-button--ghost"
@@ -1692,12 +1798,19 @@ export default function AdminGuidesPage() {
                                           </button>
                                         </div>
                                         <textarea
-                                          rows={3}
-                                          value={paragraph}
+                                          rows={isSectionContentSubtitleLine(paragraph) ? 2 : 3}
+                                          value={getSectionContentEditableText(paragraph)}
                                           onChange={(event) =>
                                             updateGuide((draft) => {
-                                              draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs[paragraphIndex] =
-                                                event.target.value;
+                                              const current =
+                                                draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs[
+                                                  paragraphIndex
+                                                ] ?? "";
+                                              draft.tabs[tabIndex].sections[activeSectionIndex].paragraphs[
+                                                paragraphIndex
+                                              ] = isSectionContentSubtitleLine(current)
+                                                ? toSectionContentSubtitle(event.target.value)
+                                                : event.target.value;
                                             })
                                           }
                                         />
@@ -1872,7 +1985,7 @@ export default function AdminGuidesPage() {
                                       onClick={() =>
                                         updateGuide((draft) => {
                                           draft.tabs[tabIndex].tables[tableIndex].columns.push({
-                                            key: "description",
+                                            key: "examples",
                                             label: "Nueva columna",
                                           });
                                         })
@@ -2076,19 +2189,179 @@ export default function AdminGuidesPage() {
 
                                         <div className="admin-form__grid admin-form__grid--triple">
                                           <label className="admin-field">
-                                            <span>Descripcion</span>
+                                            <span>Ageing / Maturation</span>
                                             <input
-                                              value={row.description ?? ""}
+                                              value={row.ageingMaturation ?? ""}
                                               onChange={(event) =>
                                                 updateGuide((draft) => {
-                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].description =
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].ageingMaturation = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Distillation Method</span>
+                                            <input
+                                              value={row.distillationMethod ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].distillationMethod = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Body</span>
+                                            <input
+                                              value={row.body ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].body =
                                                     event.target.value;
                                                 })
                                               }
                                             />
                                           </label>
                                           <label className="admin-field">
-                                            <span>Referencia</span>
+                                            <span>Intensidad</span>
+                                            <input
+                                              value={row.intensity ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].intensity =
+                                                    event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Bitterness (IBU)</span>
+                                            <input
+                                              value={row.bitternessIbu ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].bitternessIbu = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Description</span>
+                                            <input
+                                              value={row.description ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].description = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Perfil / Caracter</span>
+                                            <input
+                                              value={row.profileCharacter ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].profileCharacter = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                        </div>
+
+                                        <div className="admin-form__grid admin-form__grid--triple">
+                                          <label className="admin-field">
+                                            <span>Finish</span>
+                                            <input
+                                              value={row.finish ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].finish =
+                                                    event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Region / Origin</span>
+                                            <input
+                                              value={row.regionOrigin ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].regionOrigin = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Visual / Color</span>
+                                            <input
+                                              value={row.visualColor ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].visualColor = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                        </div>
+
+                                        <div className="admin-form__grid admin-form__grid--triple">
+                                          <label className="admin-field">
+                                            <span>Tannins</span>
+                                            <input
+                                              value={row.tannins ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].tannins =
+                                                    event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Acidity</span>
+                                            <input
+                                              value={row.acidity ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].acidity =
+                                                    event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Ejemplos</span>
+                                            <input
+                                              value={row.examples ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].examples =
+                                                    event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                        </div>
+
+                                        <div className="admin-form__grid">
+                                          <label className="admin-field">
+                                            <span>Reference</span>
                                             <input
                                               value={row.reference ?? ""}
                                               onChange={(event) =>
@@ -2099,6 +2372,9 @@ export default function AdminGuidesPage() {
                                               }
                                             />
                                           </label>
+                                        </div>
+
+                                        <div className="admin-form__grid">
                                           <label className="admin-field">
                                             <span>ABV</span>
                                             <input

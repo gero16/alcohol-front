@@ -32,7 +32,25 @@ export type GuideSummary = {
 };
 
 export type GuideTableColumn = {
-  key: "term" | "composition" | "objective" | "description" | "reference" | "abv";
+  key:
+    | "term"
+    | "composition"
+    | "objective"
+    | "description"
+    | "reference"
+    | "abv"
+    | "ageingMaturation"
+    | "distillationMethod"
+    | "profileCharacter"
+    | "body"
+    | "intensity"
+    | "bitternessIbu"
+    | "finish"
+    | "regionOrigin"
+    | "visualColor"
+    | "tannins"
+    | "acidity"
+    | "examples";
   label: string;
 };
 
@@ -44,6 +62,18 @@ export type GuideTableRow = {
   description?: string;
   reference?: string;
   abv?: string;
+  ageingMaturation?: string;
+  distillationMethod?: string;
+  profileCharacter?: string;
+  body?: string;
+  intensity?: string;
+  bitternessIbu?: string;
+  finish?: string;
+  regionOrigin?: string;
+  visualColor?: string;
+  tannins?: string;
+  acidity?: string;
+  examples?: string;
   imageUrl?: string;
   imageAlt?: string;
 };
@@ -67,6 +97,18 @@ export type GuideTableRowInput = {
   description?: string;
   reference?: string;
   abv?: string;
+  ageingMaturation?: string;
+  distillationMethod?: string;
+  profileCharacter?: string;
+  body?: string;
+  intensity?: string;
+  bitternessIbu?: string;
+  finish?: string;
+  regionOrigin?: string;
+  visualColor?: string;
+  tannins?: string;
+  acidity?: string;
+  examples?: string;
   imageUrl?: string;
   imageAlt?: string;
 };

@@ -800,6 +800,10 @@
   font-weight: 500;
 }
 
+.classification-card__subtitle--inline {
+  margin-top: 0.35rem;
+}
+
 .classification-card__text {
   margin: 0 0 0.75rem;
   color: var(--text-muted);
@@ -1569,4 +1573,8 @@
     font-size: 0.78rem;
     font-weight: 600;
   }
+}
+
+.admin-field option {
+  color: rgb(56, 55, 55);
 }
