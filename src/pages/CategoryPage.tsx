@@ -875,6 +875,9 @@ export default function CategoryPage() {
       if (guide.category.slug === "aperitivos") {
         return buildAperitifSubcategoryViewTabs(selectedSubcategory.tab);
       }
+      if (guide.category.slug === "licores") {
+        return buildAperitifSubcategoryViewTabs(selectedSubcategory.tab);
+      }
       return [selectedSubcategory.tab];
     }
 
