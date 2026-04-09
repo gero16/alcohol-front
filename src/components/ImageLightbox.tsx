@@ -94,6 +94,44 @@ export type ZoomableImageProps = {
   zoomLabel?: string;
 } & Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "alt">;
 
+/** Misma apariencia que un `<img>` suelto (sin botón envolvente); útil para portadas y cabeceras. */
+export function ZoomableCoverImg({
+  src,
+  alt,
+  className,
+  loading,
+  zoomLabel,
+  ...imgRest
+}: Omit<ZoomableImageProps, "wrapperClassName">) {
+  const { open } = useImageLightbox();
+  const trimmed = src.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const label = zoomLabel ?? (alt.trim() ? `Ampliar imagen: ${alt}` : "Ampliar imagen");
+
+  return (
+    <img
+      {...imgRest}
+      className={className}
+      src={trimmed}
+      alt={alt}
+      loading={loading}
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      onClick={() => open(trimmed, alt)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open(trimmed, alt);
+        }
+      }}
+    />
+  );
+}
+
 export function ZoomableImage({
   src,
   alt,

@@ -10,7 +10,7 @@ import type {
   GuideTableColumn,
   GuideTableRow,
 } from "../api/types";
-import { ZoomableImage } from "../components/ImageLightbox";
+import { ZoomableCoverImg, ZoomableImage } from "../components/ImageLightbox";
 import { GlossaryText } from "../glossary";
 
 const CLASSIFICATIONS_TABLE_LOCATION = "__clasificaciones__";
@@ -936,12 +936,7 @@ export default function CategoryPage() {
         ← Todas las categorías
       </Link>
       {showDetailImage ? (
-        <ZoomableImage
-          className="detail__image"
-          src={detailImageUrl}
-          alt={detailImageAlt}
-          wrapperClassName="detail__image-zoom-wrap"
-        />
+        <ZoomableCoverImg className="detail__image detail__image--zoomable" src={detailImageUrl} alt={detailImageAlt} />
       ) : null}
       <header className="detail__header">
         <p className="hero__eyebrow">{detailEyebrow}</p>

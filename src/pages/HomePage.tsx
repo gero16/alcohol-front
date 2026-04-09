@@ -100,7 +100,7 @@ export default function HomePage() {
                       src={item.imageUrl}
                       alt={item.imageAlt}
                       className="category-slide__image"
-                      wrapperClassName="category-slide__image-zoom"
+                      wrapperClassName="category-slide__image-hit"
                       loading="lazy"
                     />
                     <div className="category-slide__overlay">
