@@ -37,6 +37,7 @@ export type GuideTableColumn = {
     | "composition"
     | "objective"
     | "description"
+    | "notes"
     | "reference"
     | "abv"
     | "ageingMaturation"
@@ -60,6 +61,7 @@ export type GuideTableRow = {
   composition?: string;
   objective?: string;
   description?: string;
+  notes?: string;
   reference?: string;
   abv?: string;
   ageingMaturation?: string;
@@ -95,6 +97,7 @@ export type GuideTableRowInput = {
   composition?: string;
   objective?: string;
   description?: string;
+  notes?: string;
   reference?: string;
   abv?: string;
   ageingMaturation?: string;

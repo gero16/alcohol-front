@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getCategories } from "../api/client";
 import type { Category } from "../api/types";
+import { ZoomableImage } from "../components/ImageLightbox";
 import { GlossaryText, useGlossary } from "../glossary";
 
 export default function HomePage() {
@@ -95,10 +96,11 @@ export default function HomePage() {
               {categories.map((item) => (
                 <li key={item.id} className="category-slider__item">
                   <article className="category-slide">
-                    <img
-                      className="category-slide__image"
+                    <ZoomableImage
                       src={item.imageUrl}
                       alt={item.imageAlt}
+                      className="category-slide__image"
+                      wrapperClassName="category-slide__image-zoom"
                       loading="lazy"
                     />
                     <div className="category-slide__overlay">

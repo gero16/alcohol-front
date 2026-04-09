@@ -63,6 +63,7 @@ const tableColumnOptions: Array<GuideTableColumn["key"]> = [
   "composition",
   "objective",
   "description",
+  "notes",
   "reference",
   "abv",
   "ageingMaturation",
@@ -162,6 +163,7 @@ function createEmptyRow(): GuideTableRowInput {
     composition: "",
     objective: "",
     description: "",
+    notes: "",
     reference: "",
     abv: "",
     ageingMaturation: "",
@@ -244,6 +246,7 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
           composition: row.composition ?? "",
           objective: row.objective ?? "",
           description: row.description ?? "",
+          notes: row.notes ?? "",
           reference: row.reference ?? "",
           abv: row.abv ?? "",
           ageingMaturation: row.ageingMaturation ?? "",
@@ -311,6 +314,7 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
           composition: emptyToUndefined(row.composition),
           objective: emptyToUndefined(row.objective),
           description: emptyToUndefined(row.description),
+          notes: emptyToUndefined(row.notes),
           reference: emptyToUndefined(row.reference),
           abv: emptyToUndefined(row.abv),
           ageingMaturation: emptyToUndefined(row.ageingMaturation),
@@ -2260,6 +2264,18 @@ export default function AdminGuidesPage() {
                                                   draft.tabs[tabIndex].tables[tableIndex].rows[
                                                     rowIndex
                                                   ].description = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Notas</span>
+                                            <input
+                                              value={row.notes ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].notes =
+                                                    event.target.value;
                                                 })
                                               }
                                             />

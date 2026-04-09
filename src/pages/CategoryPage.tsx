@@ -10,6 +10,7 @@ import type {
   GuideTableColumn,
   GuideTableRow,
 } from "../api/types";
+import { ZoomableImage } from "../components/ImageLightbox";
 import { GlossaryText } from "../glossary";
 
 const CLASSIFICATIONS_TABLE_LOCATION = "__clasificaciones__";
@@ -176,7 +177,7 @@ function ClassificationBlockFragment({ block }: { block: GuideClassificationBloc
     return null;
   }
   return (
-    <img
+    <ZoomableImage
       className="classification-card__image"
       src={url}
       alt={block.alt.trim() || "Ilustración"}
@@ -566,11 +567,13 @@ function DataTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
               {hasRowImages ? (
                 <td data-label="Imagen">
                   {row.imageUrl ? (
-                    <img
-                      className="summary-table__thumb"
+                    <ZoomableImage
                       src={row.imageUrl}
                       alt={row.imageAlt ?? row.term}
+                      className="summary-table__thumb"
+                      wrapperClassName="summary-table__thumb-button"
                       loading="lazy"
+                      zoomLabel={`Ampliar imagen de ${row.term}`}
                     />
                   ) : (
                     "Sin imagen"
@@ -606,7 +609,7 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
         {table.rows.map((row) => (
           <article key={row.id} className="classification-card">
             {row.imageUrl ? (
-              <img
+              <ZoomableImage
                 className="classification-card__image"
                 src={row.imageUrl}
                 alt={row.imageAlt ?? row.term}
@@ -621,6 +624,7 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
             {renderField("Intensidad", row.intensity)}
             {renderField("Bitterness (IBU)", row.bitternessIbu)}
             {renderField("Description", row.description)}
+            {renderField("Notas", row.notes)}
             {renderField("Finish", row.finish)}
             {renderField("Region / Origin", row.regionOrigin)}
             {renderField("Visual / Color", row.visualColor)}
@@ -696,7 +700,7 @@ function GuidePanel({
               data-section-semantic-key={section.semanticKey?.trim() || undefined}
             >
               {!hideSectionHeader ? (
-                <img
+                <ZoomableImage
                   className="classification-card__image"
                   src={section.imageUrl}
                   alt={section.imageAlt}
@@ -931,7 +935,14 @@ export default function CategoryPage() {
       <Link to="/" className="detail__back">
         ← Todas las categorías
       </Link>
-      {showDetailImage ? <img className="detail__image" src={detailImageUrl} alt={detailImageAlt} /> : null}
+      {showDetailImage ? (
+        <ZoomableImage
+          className="detail__image"
+          src={detailImageUrl}
+          alt={detailImageAlt}
+          wrapperClassName="detail__image-zoom-wrap"
+        />
+      ) : null}
       <header className="detail__header">
         <p className="hero__eyebrow">{detailEyebrow}</p>
         <h1 className="hero__title detail__title">{detailTitle}</h1>

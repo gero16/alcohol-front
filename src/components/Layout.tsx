@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { getCategories, getGuideByCategorySlug } from "../api/client";
+import { ImageLightboxProvider } from "./ImageLightbox";
 import type { Category, GuideDetail, GuideTab } from "../api/types";
 
 function isSpiritGuideTabSlug(slug: string): boolean {
@@ -283,7 +284,9 @@ export default function Layout() {
           </div>
         ) : null}
       </nav>
-      <Outlet />
+      <ImageLightboxProvider>
+        <Outlet />
+      </ImageLightboxProvider>
     </div>
   );
 }
