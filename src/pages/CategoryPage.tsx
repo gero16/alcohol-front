@@ -177,8 +177,8 @@ function ClassificationBlockFragment({ block }: { block: GuideClassificationBloc
     return null;
   }
   return (
-    <ZoomableImage
-      className="classification-card__image"
+    <ZoomableCoverImg
+      className="classification-card__image classification-card__image--zoomable"
       src={url}
       alt={block.alt.trim() || "Ilustración"}
       loading="lazy"
@@ -609,8 +609,8 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
         {table.rows.map((row) => (
           <article key={row.id} className="classification-card">
             {row.imageUrl ? (
-              <ZoomableImage
-                className="classification-card__image"
+              <ZoomableCoverImg
+                className="classification-card__image classification-card__image--zoomable"
                 src={row.imageUrl}
                 alt={row.imageAlt ?? row.term}
                 loading="lazy"
@@ -692,6 +692,7 @@ function GuidePanel({
         <div className="classification-list">
           {activeTab.sections.map((section) => {
             const hideSectionHeader = compactSingleSection && activeTab.sections.length === 1;
+            const sectionCoverUrl = section.imageUrl?.trim() ?? "";
 
             return (
             <article
@@ -700,8 +701,15 @@ function GuidePanel({
               data-section-semantic-key={section.semanticKey?.trim() || undefined}
             >
               {!hideSectionHeader ? (
-                <ZoomableImage
-                  className="classification-card__image"
+                <ZoomableCoverImg
+                  className="classification-card__image classification-card__image--zoomable"
+                  src={section.imageUrl}
+                  alt={section.imageAlt}
+                  loading="lazy"
+                />
+              ) : sectionCoverUrl ? (
+                <ZoomableCoverImg
+                  className="guide-section__cover guide-section__cover--zoomable"
                   src={section.imageUrl}
                   alt={section.imageAlt}
                   loading="lazy"
