@@ -878,9 +878,175 @@
   scroll-margin-top: 6rem;
 }
 
+.glossary-grid__hint {
+  margin: -0.35rem 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+.glossary-card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .glossary-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /** Al expandir, la tarjeta usa todo el ancho del contenedor de la página. */
+  .glossary-card--open {
+    grid-column: 1 / -1;
+  }
+}
+
+.glossary-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glossary-card:hover {
+  border-color: rgba(201, 162, 39, 0.28);
+}
+
+.glossary-card--open {
+  border-color: rgba(201, 162, 39, 0.42);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.28);
+}
+
+.glossary-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 1.1rem 1.2rem 0.65rem;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.glossary-card__header:hover {
+  color: #f0e6dc;
+}
+
+.glossary-card__header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.glossary-card__term {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.28rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.glossary-card__chevron {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.45rem;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(45deg);
+  transition: transform 0.22s ease;
+}
+
+.glossary-card--open .glossary-card__chevron {
+  transform: rotate(-135deg);
+  margin-top: 0.55rem;
+}
+
+.glossary-card__short {
+  margin: 0;
+  padding: 0 1.2rem 1rem;
+  color: var(--text);
+  font-size: 0.94rem;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.glossary-card__short--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.glossary-card--open .glossary-card__short {
+  padding-bottom: 0.85rem;
+}
+
+.glossary-card__collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.glossary-card__collapsible--open {
+  grid-template-rows: 1fr;
+}
+
+.glossary-card__collapsible-inner {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 1.2rem 1.15rem;
+  border-top: 1px solid transparent;
+}
+
+.glossary-card--open .glossary-card__collapsible-inner {
+  border-top-color: rgba(255, 255, 255, 0.06);
+  padding-top: 0.85rem;
+}
+
+.glossary-card__detail {
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 300;
+  line-height: 1.65;
+}
+
+.glossary-card__detail:last-of-type {
+  margin-bottom: 0;
+}
+
+.glossary-card__reference {
+  margin: 0.85rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.glossary-card__reference a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.glossary-card__reference a:hover {
+  text-decoration: underline;
+}
+
 .glossary-entry:target {
   border-color: rgba(201, 162, 39, 0.48);
-  background: rgba(201, 162, 39, 0.08);
+  background: rgba(201, 162, 39, 0.06);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
 }
 
