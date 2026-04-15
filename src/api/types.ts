@@ -215,6 +215,7 @@ export type WhiskyType =
   | "BLENDED_MALT"
   | "BLENDED_SCOTCH"
   | "BOURBON"
+  | "TENNESSEE_WHISKEY"
   | "RYE"
   | "IRISH"
   | "JAPANESE"
@@ -262,7 +263,10 @@ export type Product = {
   regionDetail?: string | null;
   imageUrl?: string | null;
   imageAlt?: string | null;
-  description?: string | null;
+  /** Descripción breve para listados y previews */
+  shortDescription?: string | null;
+  /** Descripción larga y detallada */
+  longDescription?: string | null;
   /** "On the rocks", "Highball", "En copa técnica", etc. */
   servingSuggestion?: string | null;
   priceRange?: string | null;

@@ -52,11 +52,13 @@ function getBlank(): FormState {
     regionDetail: "",
     imageUrl: "",
     imageAlt: "",
-    description: "",
+    shortDescription: "",
+    longDescription: "",
     servingSuggestion: "",
     priceRange: "",
     featured: false,
     tagsText: "",
+    pairingsText: "",
     bodyDensity: null,
     mixingRatio: "",
     tastingColor: "",
@@ -91,7 +93,8 @@ function toFormState(p: Product): FormState {
     regionDetail: p.regionDetail ?? "",
     imageUrl: p.imageUrl ?? "",
     imageAlt: p.imageAlt ?? "",
-    description: p.description ?? "",
+    shortDescription: p.shortDescription ?? "",
+    longDescription: p.longDescription ?? "",
     servingSuggestion: p.servingSuggestion ?? "",
     priceRange: p.priceRange ?? "",
     featured: p.featured,
@@ -118,52 +121,72 @@ function toFormState(p: Product): FormState {
     beerStyle: p.beerStyle ?? "",
     ibu: p.ibu ?? undefined,
     beerColor: p.beerColor ?? "",
+    pairingsText: arrayToText(p.pairings),
   };
 }
 
+/** Elimina del objeto las claves cuyo valor es null, undefined o string vacío. */
+function omitEmpty<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== null && v !== undefined && v !== ""),
+  ) as Partial<T>;
+}
+
 function toProductInput(f: FormState): ProductInput {
-  return {
-    slug: f.slug.trim(),
-    name: f.name.trim(),
-    brand: f.brand.trim(),
-    categorySlug: f.categorySlug.trim(),
-    subcategorySlug: f.subcategorySlug?.trim() || null,
-    abv: f.abv ?? null,
-    origin: f.origin?.trim() || null,
-    regionDetail: f.regionDetail?.trim() || null,
-    imageUrl: f.imageUrl?.trim() || null,
-    imageAlt: f.imageAlt?.trim() || null,
-    description: f.description?.trim() || null,
-    servingSuggestion: f.servingSuggestion?.trim() || null,
-    priceRange: f.priceRange?.trim() || null,
-    featured: f.featured,
-    tags: textToArray(f.tagsText),
-    bodyDensity: f.bodyDensity ?? null,
-    mixingRatio: f.mixingRatio?.trim() || null,
-    tastingColor: f.tastingColor?.trim() || null,
-    tastingNose: textToArray(f.tastingNoseText),
-    tastingPalate: textToArray(f.tastingPalateText),
-    tastingFinish: f.tastingFinish?.trim() || null,
-    whiskyType: f.whiskyType ?? null,
-    distillery: f.distillery?.trim() || null,
-    ageStatement: f.ageStatement?.trim() || null,
-    caskType: f.caskType?.trim() || null,
-    isPeated: f.isPeated ?? null,
-    wineType: f.wineType ?? null,
-    wineStyle: f.wineStyle ?? null,
-    vintage: f.vintage ?? null,
-    producer: f.producer?.trim() || null,
-    grapes: f.grapes
-      .filter((g) => g.grape.trim().length > 0)
-      .map((g) => ({
-        grape: g.grape.trim(),
-        percentage: g.percentage ? Number(g.percentage) : undefined,
-      })),
-    beerStyle: f.beerStyle?.trim() || null,
-    ibu: f.ibu ?? null,
-    beerColor: f.beerColor?.trim() || null,
-    pairings: textToArray(f.pairingsText ?? ""),
+  const raw: Record<string, unknown> = {
+    slug:              f.slug.trim(),
+    name:              f.name.trim(),
+    brand:             f.brand.trim(),
+    categorySlug:      f.categorySlug.trim(),
+    featured:          f.featured,
+    // Opcionales — se omiten si no tienen valor
+    subcategorySlug:   f.subcategorySlug?.trim()   || undefined,
+    abv:               f.abv                        ?? undefined,
+    origin:            f.origin?.trim()             || undefined,
+    regionDetail:      f.regionDetail?.trim()       || undefined,
+    imageUrl:          f.imageUrl?.trim()           || undefined,
+    imageAlt:          f.imageAlt?.trim()           || undefined,
+    shortDescription:  f.shortDescription?.trim()   || undefined,
+    longDescription:   f.longDescription?.trim()    || undefined,
+    servingSuggestion: f.servingSuggestion?.trim()  || undefined,
+    priceRange:        f.priceRange?.trim()         || undefined,
+    bodyDensity:       f.bodyDensity                ?? undefined,
+    mixingRatio:       f.mixingRatio?.trim()        || undefined,
+    tastingColor:      f.tastingColor?.trim()       || undefined,
+    tastingFinish:     f.tastingFinish?.trim()      || undefined,
+    // Whisky
+    whiskyType:        f.whiskyType                 ?? undefined,
+    distillery:        f.distillery?.trim()         || undefined,
+    ageStatement:      f.ageStatement?.trim()       || undefined,
+    caskType:          f.caskType?.trim()           || undefined,
+    isPeated:          f.isPeated                   ?? undefined,
+    // Vino
+    wineType:          f.wineType                   ?? undefined,
+    wineStyle:         f.wineStyle                  ?? undefined,
+    vintage:           f.vintage                    ?? undefined,
+    producer:          f.producer?.trim()           || undefined,
+    // Cerveza
+    beerStyle:         f.beerStyle?.trim()          || undefined,
+    ibu:               f.ibu                        ?? undefined,
+    beerColor:         f.beerColor?.trim()          || undefined,
   };
+
+  // Arrays: solo se incluyen si tienen elementos
+  const tags     = textToArray(f.tagsText);
+  const nose     = textToArray(f.tastingNoseText);
+  const palate   = textToArray(f.tastingPalateText);
+  const pairings = textToArray(f.pairingsText);
+  const grapes   = f.grapes
+    .filter((g) => g.grape.trim().length > 0)
+    .map((g) => ({ grape: g.grape.trim(), percentage: g.percentage ? Number(g.percentage) : undefined }));
+
+  if (tags.length)     raw.tags          = tags;
+  if (nose.length)     raw.tastingNose   = nose;
+  if (palate.length)   raw.tastingPalate = palate;
+  if (pairings.length) raw.pairings      = pairings;
+  if (grapes.length)   raw.grapes        = grapes;
+
+  return omitEmpty(raw) as ProductInput;
 }
 
 function validate(f: FormState): string | null {
@@ -504,11 +527,21 @@ export default function AdminProductsPage() {
               </div>
 
               <label className="admin-field">
-                <span>Descripción general</span>
+                <span>Descripción corta</span>
+                <input
+                  value={form.shortDescription ?? ""}
+                  onChange={(e) => set("shortDescription", e.target.value)}
+                  placeholder="Blended Scotch ideal para mezclas, accesible y versátil."
+                />
+              </label>
+
+              <label className="admin-field">
+                <span>Descripción larga</span>
                 <textarea
-                  rows={3}
-                  value={form.description ?? ""}
-                  onChange={(e) => set("description", e.target.value)}
+                  rows={5}
+                  value={form.longDescription ?? ""}
+                  onChange={(e) => set("longDescription", e.target.value)}
+                  placeholder="Historia, perfil detallado, proceso de producción..."
                 />
               </label>
 
@@ -593,11 +626,8 @@ export default function AdminProductsPage() {
               <label className="admin-field">
                 <span>Maridajes (separados por coma)</span>
                 <input
-                  value={(form as FormState & { pairingsText?: string }).pairingsText ?? ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, pairingsText: e.target.value }))
-                  }
-                  onInput={() => setDirty(true)}
+                  value={form.pairingsText}
+                  onChange={(e) => set("pairingsText", e.target.value)}
                   placeholder="Carnes rojas, Quesos azules, Ginger Ale"
                 />
               </label>
@@ -664,6 +694,7 @@ export default function AdminProductsPage() {
                       <option value="BLENDED_MALT">Blended Malt</option>
                       <option value="BLENDED_SCOTCH">Blended Scotch</option>
                       <option value="BOURBON">Bourbon</option>
+                      <option value="TENNESSEE_WHISKEY">Tennessee Whiskey</option>
                       <option value="RYE">Rye</option>
                       <option value="IRISH">Irish</option>
                       <option value="JAPANESE">Japanese</option>

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { ApiError, getCategoryBySlug, getGuideByCategorySlug } from "../api/client";
+import { ApiError, getCategoryBySlug, getGuideByCategorySlug, getProducts } from "../api/client";
 import type {
+  BodyDensity,
   Category,
   GuideClassification,
   GuideClassificationBlock,
@@ -9,12 +10,16 @@ import type {
   GuideTable,
   GuideTableColumn,
   GuideTableRow,
+  Product,
+  WhiskyType,
+  WineType,
 } from "../api/types";
 import { ZoomableCoverImg, ZoomableImage } from "../components/ImageLightbox";
 import { GlossaryText } from "../glossary";
 
 const CLASSIFICATIONS_TABLE_LOCATION = "__clasificaciones__";
 const SECTION_CONTENT_SUBTITLE_PREFIX = "__subtitle__:";
+const PRODUCTS_TAB_SLUG = "__productos__";
 
 type SectionContentBlock = {
   kind: "subtitle" | "paragraph";
@@ -776,10 +781,188 @@ function GuidePanel({
   );
 }
 
+// ─── Helpers de legibilidad para productos ────────────────────────────────────
+
+const WHISKY_TYPE_LABELS: Record<WhiskyType, string> = {
+  SINGLE_MALT:       "Single Malt",
+  SINGLE_GRAIN:      "Single Grain",
+  BLENDED_MALT:      "Blended Malt",
+  BLENDED_SCOTCH:    "Blended Scotch",
+  BOURBON:           "Bourbon",
+  TENNESSEE_WHISKEY: "Tennessee Whiskey",
+  RYE:               "Rye",
+  IRISH:             "Irish",
+  JAPANESE:          "Japanese",
+  WORLD:             "World",
+};
+
+const WINE_TYPE_LABELS: Record<WineType, string> = {
+  TINTO:      "Tinto",
+  BLANCO:     "Blanco",
+  ROSADO:     "Rosado",
+  ESPUMOSO:   "Espumoso",
+  DULCE:      "Dulce",
+  SEMI_DULCE: "Semi Dulce",
+  SEMI_SECO:  "Semi Seco",
+  FORTIFICADO: "Fortificado",
+};
+
+const BODY_DENSITY_LABELS: Record<BodyDensity, string> = {
+  LOW:         "Cuerpo ligero",
+  MEDIUM_LOW:  "Ligero-Medio",
+  MEDIUM:      "Cuerpo medio",
+  MEDIUM_HIGH: "Medio-Pleno",
+  HIGH:        "Cuerpo pleno",
+};
+
+function ProductCard({ product }: { product: Product }) {
+  const typeLabel =
+    product.whiskyType ? WHISKY_TYPE_LABELS[product.whiskyType] :
+    product.wineType   ? WINE_TYPE_LABELS[product.wineType]     :
+    product.beerStyle  ? product.beerStyle                       :
+    null;
+
+  const grapeList = product.grapes?.map((g) =>
+    g.percentage ? `${g.grape} ${g.percentage}%` : g.grape
+  ).join(" · ");
+
+  return (
+    <article className="product-card">
+      {product.imageUrl ? (
+        <ZoomableCoverImg
+          className="product-card__image product-card__image--zoomable"
+          src={product.imageUrl}
+          alt={product.imageAlt ?? product.name}
+          loading="lazy"
+        />
+      ) : null}
+
+      <div className="product-card__body">
+        <header className="product-card__header">
+          <p className="product-card__brand">{product.brand}</p>
+          <h3 className="product-card__name">{product.name}</h3>
+
+          <div className="product-card__badges">
+            {typeLabel ? (
+              <span className="product-badge product-badge--type">{typeLabel}</span>
+            ) : null}
+            {product.abv ? (
+              <span className="product-badge">{product.abv}% ABV</span>
+            ) : null}
+            {product.ageStatement ? (
+              <span className="product-badge">{product.ageStatement} años</span>
+            ) : null}
+            {product.isPeated ? (
+              <span className="product-badge product-badge--peated">Ahumado</span>
+            ) : null}
+            {product.bodyDensity ? (
+              <span className="product-badge product-badge--body">{BODY_DENSITY_LABELS[product.bodyDensity]}</span>
+            ) : null}
+            {product.priceRange ? (
+              <span className="product-badge product-badge--price">{product.priceRange}</span>
+            ) : null}
+          </div>
+        </header>
+
+        {product.shortDescription ? (
+          <p className="product-card__description product-card__description--short">
+            {product.shortDescription}
+          </p>
+        ) : null}
+        {product.longDescription ? (
+          <p className="product-card__description">{product.longDescription}</p>
+        ) : null}
+
+        {product.tastingColor || (product.tastingNose?.length ?? 0) > 0 || (product.tastingPalate?.length ?? 0) > 0 ? (
+          <dl className="product-card__tasting">
+            {product.tastingColor ? (
+              <>
+                <dt>Color</dt>
+                <dd>{product.tastingColor}</dd>
+              </>
+            ) : null}
+            {(product.tastingNose?.length ?? 0) > 0 ? (
+              <>
+                <dt>Nariz</dt>
+                <dd>{product.tastingNose!.join(" · ")}</dd>
+              </>
+            ) : null}
+            {(product.tastingPalate?.length ?? 0) > 0 ? (
+              <>
+                <dt>Paladar</dt>
+                <dd>{product.tastingPalate!.join(" · ")}</dd>
+              </>
+            ) : null}
+            {product.tastingFinish ? (
+              <>
+                <dt>Final</dt>
+                <dd>{product.tastingFinish}</dd>
+              </>
+            ) : null}
+          </dl>
+        ) : null}
+
+        {grapeList ? (
+          <p className="product-card__grapes"><strong>Cepas:</strong> {grapeList}</p>
+        ) : null}
+
+        {product.servingSuggestion || product.mixingRatio ? (
+          <dl className="product-card__serving">
+            {product.servingSuggestion ? (
+              <>
+                <dt>Servir</dt>
+                <dd>{product.servingSuggestion}</dd>
+              </>
+            ) : null}
+            {product.mixingRatio ? (
+              <>
+                <dt>Mezcla</dt>
+                <dd>{product.mixingRatio}</dd>
+              </>
+            ) : null}
+          </dl>
+        ) : null}
+
+        {(product.pairings?.length ?? 0) > 0 ? (
+          <p className="product-card__pairings">
+            <strong>Maridaje:</strong> {product.pairings!.join(", ")}
+          </p>
+        ) : null}
+
+        {(product.tags?.length ?? 0) > 0 ? (
+          <ul className="product-card__tags">
+            {product.tags!.map((tag) => (
+              <li key={tag} className="product-tag">{tag}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function ProductsSection({ products, title }: { products: Product[]; title: string }) {
+  if (products.length === 0) return null;
+
+  return (
+    <section className="detail__section detail__section--products">
+      <h2 className="section-title">{title}</h2>
+      <div className="product-grid">
+        {products.map((p) => (
+          <ProductCard key={p.id} product={p} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
+
 export default function CategoryPage() {
   const { id, subId } = useParams<{ id: string; subId?: string }>();
   const [category, setCategory] = useState<Category | null>(null);
   const [guide, setGuide] = useState<GuideDetail | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [activeTabSlug, setActiveTabSlug] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -799,9 +982,10 @@ export default function CategoryPage() {
       setNotFound(false);
 
       try {
-        const [nextCategory, nextGuide] = await Promise.all([
+        const [nextCategory, nextGuide, nextProducts] = await Promise.all([
           getCategoryBySlug(id),
           getGuideByCategorySlug(id),
+          getProducts({ categorySlug: id }),
         ]);
 
         if (!active) {
@@ -810,6 +994,7 @@ export default function CategoryPage() {
 
         setCategory(nextCategory);
         setGuide(nextGuide);
+        setProducts(nextProducts);
         setActiveTabSlug(nextGuide?.tabs[0]?.slug ?? "");
       } catch (err) {
         if (!active) {
@@ -835,6 +1020,12 @@ export default function CategoryPage() {
   }, [id]);
 
   const tabs = useMemo(() => guide?.tabs ?? [], [guide]);
+
+  // Productos filtrados por subcategoría activa (subId) o todos los de la categoría
+  const visibleProducts = useMemo(
+    () => subId ? products.filter((p) => p.subcategorySlug === subId) : products,
+    [products, subId],
+  );
   const subcategories = useMemo(() => (guide ? getGuideSubcategories(guide) : []), [guide]);
   const tabsWithoutSubcategories = useMemo(() => (guide ? getTabsWithoutSubcategories(guide) : tabs), [guide, tabs]);
   const selectedSubcategory = useMemo(() => {
@@ -884,13 +1075,33 @@ export default function CategoryPage() {
     return tabs;
   }, [guide, selectedSubcategory, subId, supportsSubcategories, tabs, tabsWithoutSubcategories]);
 
-  const subcategoryDetailUsesTabs = Boolean(selectedSubcategory) && tabsToRender.length > 1;
+  // Si hay productos visibles, agregamos una pestaña sintética "Productos" al final
+  const tabsWithProducts = useMemo(() => {
+    if (visibleProducts.length === 0) return tabsToRender;
+    return [
+      ...tabsToRender,
+      {
+        id: PRODUCTS_TAB_SLUG,
+        slug: PRODUCTS_TAB_SLUG,
+        label: `Productos (${visibleProducts.length})`,
+        panelTitle: undefined,
+        noteTitle: undefined,
+        noteContent: undefined,
+        semanticKey: undefined,
+        classifications: [],
+        sections: [],
+        tables: [],
+      } as GuideDetail["tabs"][number],
+    ];
+  }, [tabsToRender, visibleProducts]);
+
+  const subcategoryDetailUsesTabs = Boolean(selectedSubcategory) && tabsWithProducts.length > 1;
 
   useEffect(() => {
-    if (tabsToRender.length > 0 && !tabsToRender.some((tab) => tab.slug === activeTabSlug)) {
-      setActiveTabSlug(tabsToRender[0].slug);
+    if (tabsWithProducts.length > 0 && !tabsWithProducts.some((tab) => tab.slug === activeTabSlug)) {
+      setActiveTabSlug(tabsWithProducts[0].slug);
     }
-  }, [activeTabSlug, tabsToRender]);
+  }, [activeTabSlug, tabsWithProducts]);
 
   if (notFound) {
     return <Navigate to="/404" replace />;
@@ -997,9 +1208,9 @@ export default function CategoryPage() {
               : guide.title}
           </h2>
 
-          {tabsToRender.length > 1 ? (
+          {tabsWithProducts.length > 1 ? (
             <div className="wine-tabs" role="tablist" aria-label={guide.title}>
-              {tabsToRender.map((tab) => (
+              {tabsWithProducts.map((tab) => (
                 <button
                   key={tab.id}
                   id={`guide-tab-${tab.slug}`}
@@ -1020,7 +1231,16 @@ export default function CategoryPage() {
             </div>
           ) : null}
 
-          {tabsToRender.length > 0 ? (
+          {activeTabSlug === PRODUCTS_TAB_SLUG ? (
+            <ProductsSection
+              products={visibleProducts}
+              title={
+                subId && selectedSubcategory
+                  ? `Productos — ${selectedSubcategory.label}`
+                  : `Productos — ${category.title}`
+              }
+            />
+          ) : tabsWithProducts.length > 0 ? (
             <GuidePanel
               guide={{
                 ...guide,
