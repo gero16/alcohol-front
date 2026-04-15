@@ -5,6 +5,7 @@ const adminLinks = [
   { to: "/admin/categorias", label: "Categorías" },
   { to: "/admin/guias", label: "Guías" },
   { to: "/admin/glosario", label: "Glosario" },
+  { to: "/admin/productos", label: "Productos" },
 ];
 
 export default function AdminLayout() {

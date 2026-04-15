@@ -8,6 +8,8 @@ import type {
   GuideDetail,
   GuideInput,
   GuideSummary,
+  Product,
+  ProductInput,
 } from "./types";
 
 const DEFAULT_API_BASE_URL = "https://alcohol-api-qn53.onrender.com";
@@ -184,6 +186,45 @@ export async function updateGlossaryItem(currentSlug: string, payload: GlossaryI
 
 export async function deleteGlossaryItem(slug: string): Promise<void> {
   await requestJson<void>(`/glossary/${slug}`, {
+    method: "DELETE",
+  });
+}
+
+// ─── Productos ────────────────────────────────────────────────────────────────
+
+export async function getProducts(filters?: {
+  categorySlug?: string;
+  subcategorySlug?: string;
+  featured?: boolean;
+}): Promise<Product[]> {
+  const params = new URLSearchParams();
+  if (filters?.categorySlug)    params.set("categorySlug",    filters.categorySlug);
+  if (filters?.subcategorySlug) params.set("subcategorySlug", filters.subcategorySlug);
+  if (filters?.featured !== undefined) params.set("featured", String(filters.featured));
+  const qs = params.toString();
+  return requestJson<Product[]>(`/products${qs ? `?${qs}` : ""}`);
+}
+
+export async function getProductBySlug(slug: string): Promise<Product> {
+  return requestJson<Product>(`/products/${slug}`);
+}
+
+export async function createProduct(payload: ProductInput): Promise<Product> {
+  return requestJson<Product>("/products", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateProduct(currentSlug: string, payload: ProductInput): Promise<Product> {
+  return requestJson<Product>(`/products/${currentSlug}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export async function deleteProduct(slug: string): Promise<void> {
+  await requestJson<void>(`/products/${slug}`, {
     method: "DELETE",
   });
 }

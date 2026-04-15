@@ -19,6 +19,12 @@ const adminSections = [
     to: "/admin/glosario",
     cta: "Administrar glosario",
   },
+  {
+    title: "Productos",
+    text: "Fichas detalladas de marcas y etiquetas: whiskies, vinos, cervezas y más, con notas de cata, cepas y clasificaciones específicas.",
+    to: "/admin/productos",
+    cta: "Administrar productos",
+  },
 ];
 
 export default function AdminHomePage() {

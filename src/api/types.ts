@@ -207,6 +207,105 @@ export type GuideInput = {
   tabs: GuideTabInput[];
 };
 
+// ─── Productos / marcas específicas ───────────────────────────────────────────
+
+export type WhiskyType =
+  | "SINGLE_MALT"
+  | "SINGLE_GRAIN"
+  | "BLENDED_MALT"
+  | "BLENDED_SCOTCH"
+  | "BOURBON"
+  | "RYE"
+  | "IRISH"
+  | "JAPANESE"
+  | "WORLD";
+
+export type WineType =
+  | "TINTO"
+  | "BLANCO"
+  | "ROSADO"
+  | "ESPUMOSO"
+  | "DULCE"
+  | "SEMI_DULCE"
+  | "SEMI_SECO"
+  | "FORTIFICADO";
+
+export type WineStyle =
+  | "JOVEN"
+  | "ROBLE"
+  | "CRIANZA"
+  | "RESERVA"
+  | "GRAN_RESERVA";
+
+/** Cuerpo/densidad en boca, aplicable a cualquier bebida. */
+export type BodyDensity =
+  | "LOW"
+  | "MEDIUM_LOW"
+  | "MEDIUM"
+  | "MEDIUM_HIGH"
+  | "HIGH";
+
+export type WineGrape = {
+  grape: string;
+  percentage?: number;
+};
+
+export type Product = {
+  id: string;
+  slug: string;
+  name: string;
+  brand: string;
+  categorySlug: string;
+  subcategorySlug?: string | null;
+  abv?: number | null;
+  origin?: string | null;
+  regionDetail?: string | null;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  description?: string | null;
+  /** "On the rocks", "Highball", "En copa técnica", etc. */
+  servingSuggestion?: string | null;
+  priceRange?: string | null;
+  featured: boolean;
+  /** Tags libres para búsqueda: ["ahumado", "mezcla", "picante"] */
+  tags?: string[] | null;
+  /** Cuerpo/densidad en boca */
+  bodyDensity?: BodyDensity | null;
+  /** Proporción de mezcla recomendada: "70/30 Cola", "Ginger Ale 1:3" */
+  mixingRatio?: string | null;
+  // Notas de cata
+  tastingColor?: string | null;
+  /** Array de aromas para filtrado: ["cítricos", "vainilla", "humo joven"] */
+  tastingNose?: string[] | null;
+  /** Array de sabores para filtrado: ["especias", "malta", "pimienta"] */
+  tastingPalate?: string[] | null;
+  tastingFinish?: string | null;
+  // Whisky
+  whiskyType?: WhiskyType | null;
+  distillery?: string | null;
+  /** Años de guarda o "NAS" si no hay declaración de edad */
+  ageStatement?: string | null;
+  caskType?: string | null;
+  /** Si el whisky es ahumado con turba */
+  isPeated?: boolean | null;
+  // Vino
+  wineType?: WineType | null;
+  wineStyle?: WineStyle | null;
+  vintage?: number | null;
+  producer?: string | null;
+  grapes?: WineGrape[] | null;
+  // Cerveza
+  beerStyle?: string | null;
+  ibu?: number | null;
+  beerColor?: string | null;
+  // Maridajes
+  pairings?: string[] | null;
+};
+
+export type ProductInput = Omit<Product, "id" | "featured"> & {
+  featured?: boolean;
+};
+
 export type GlossaryItem = {
   slug: string;
   term: string;

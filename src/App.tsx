@@ -10,6 +10,7 @@ import AdminHomePage from "./pages/admin/AdminHomePage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminGuidesPage from "./pages/admin/AdminGuidesPage";
 import AdminGlossaryPage from "./pages/admin/AdminGlossaryPage";
+import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import "./App.css";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="categorias" element={<AdminCategoriesPage />} />
           <Route path="guias" element={<AdminGuidesPage />} />
           <Route path="glosario" element={<AdminGlossaryPage />} />
+          <Route path="productos" element={<AdminProductsPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
         <Route element={<Layout />}>
