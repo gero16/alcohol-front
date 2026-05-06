@@ -13,6 +13,7 @@ import type {
   Product,
   ProductInput,
   WhiskyType,
+  WineSensoryLevel,
   WineStyle,
   WineType,
 } from "../../api/types";
@@ -74,10 +75,18 @@ function getBlank(): FormState {
     wineStyle: null,
     vintage: undefined,
     producer: "",
+    varietal: "",
+    oakAging: null,
+    tanninLevel: null,
+    acidityLevel: null,
     grapes: [],
     beerStyle: "",
     ibu: undefined,
     beerColor: "",
+    celiacFriendly: null,
+    veganFriendly: null,
+    isOrganic: null,
+    note: "",
   };
 }
 
@@ -114,6 +123,10 @@ function toFormState(p: Product): FormState {
     wineStyle: p.wineStyle ?? null,
     vintage: p.vintage ?? undefined,
     producer: p.producer ?? "",
+    varietal: p.varietal ?? "",
+    oakAging: p.oakAging ?? null,
+    tanninLevel: p.tanninLevel ?? null,
+    acidityLevel: p.acidityLevel ?? null,
     grapes: (p.grapes ?? []).map((g) => ({
       grape: g.grape,
       percentage: g.percentage != null ? String(g.percentage) : "",
@@ -122,6 +135,10 @@ function toFormState(p: Product): FormState {
     ibu: p.ibu ?? undefined,
     beerColor: p.beerColor ?? "",
     pairingsText: arrayToText(p.pairings),
+    celiacFriendly: p.celiacFriendly ?? null,
+    veganFriendly: p.veganFriendly ?? null,
+    isOrganic: p.isOrganic ?? null,
+    note: p.note ?? "",
   };
 }
 
@@ -165,6 +182,9 @@ function toProductInput(f: FormState): ProductInput {
     wineStyle:         f.wineStyle                  ?? undefined,
     vintage:           f.vintage                    ?? undefined,
     producer:          f.producer?.trim()           || undefined,
+    varietal:          f.varietal?.trim()           || undefined,
+    tanninLevel:       f.tanninLevel                ?? undefined,
+    acidityLevel:      f.acidityLevel               ?? undefined,
     // Cerveza
     beerStyle:         f.beerStyle?.trim()          || undefined,
     ibu:               f.ibu                        ?? undefined,
@@ -186,7 +206,16 @@ function toProductInput(f: FormState): ProductInput {
   if (pairings.length) raw.pairings      = pairings;
   if (grapes.length)   raw.grapes        = grapes;
 
-  return omitEmpty(raw) as ProductInput;
+  const trimmedNote = (f.note ?? "").trim();
+  const out = omitEmpty(raw) as ProductInput;
+  // Tres estados explícitos (null = sin informar); omitEmpty eliminaría null.
+  out.celiacFriendly = f.celiacFriendly;
+  out.veganFriendly = f.veganFriendly;
+  out.oakAging = f.oakAging;
+  out.isOrganic = f.isOrganic;
+  // Siempre enviar `note` como string o null: si fuera `undefined`, JSON.stringify lo quita y Prisma no actualiza la columna.
+  out.note = trimmedNote.length > 0 ? trimmedNote : null;
+  return out;
 }
 
 function validate(f: FormState): string | null {
@@ -573,6 +602,91 @@ export default function AdminProductsPage() {
               </label>
             </div>
 
+            {/* ── Información dietaria ─────────────────────────────────── */}
+            <div className="admin-subsection">
+              <h3 className="admin-subsection__title">Información dietaria</h3>
+              <p className="status-message" style={{ marginTop: 0 }}>
+                Indicá si el producto es apto según etiquetado o criterio editorial. «Sin especificar» deja el dato vacío en la base.
+              </p>
+              <div className="admin-form__grid">
+                <label className="admin-field">
+                  <span>Apto para celíacos</span>
+                  <select
+                    value={
+                      form.celiacFriendly === null
+                        ? ""
+                        : form.celiacFriendly
+                          ? "yes"
+                          : "no"
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      set(
+                        "celiacFriendly",
+                        v === "" ? null : v === "yes",
+                      );
+                    }}
+                  >
+                    <option value="">Sin especificar</option>
+                    <option value="yes">Sí</option>
+                    <option value="no">No</option>
+                  </select>
+                </label>
+                <label className="admin-field">
+                  <span>Apto vegano</span>
+                  <select
+                    value={
+                      form.veganFriendly === null
+                        ? ""
+                        : form.veganFriendly
+                          ? "yes"
+                          : "no"
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      set(
+                        "veganFriendly",
+                        v === "" ? null : v === "yes",
+                      );
+                    }}
+                  >
+                    <option value="">Sin especificar</option>
+                    <option value="yes">Sí</option>
+                    <option value="no">No</option>
+                  </select>
+                </label>
+                <label className="admin-field">
+                  <span>Orgánico / ecológico</span>
+                  <select
+                    value={
+                      form.isOrganic === null
+                        ? ""
+                        : form.isOrganic
+                          ? "yes"
+                          : "no"
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      set("isOrganic", v === "" ? null : v === "yes");
+                    }}
+                  >
+                    <option value="">Sin especificar</option>
+                    <option value="yes">Sí</option>
+                    <option value="no">No</option>
+                  </select>
+                </label>
+              </div>
+              <label className="admin-field">
+                <span>Nota (aclaraciones, advertencias, fuente)</span>
+                <textarea
+                  rows={3}
+                  value={form.note ?? ""}
+                  onChange={(e) => set("note", e.target.value)}
+                  placeholder="Ej.: sin TACC según envase 2024; elaboración con clarificación no animal…"
+                />
+              </label>
+            </div>
+
             {/* ── Servicio y mezcla ──────────────────────────────────────── */}
             <div className="admin-subsection">
               <h3 className="admin-subsection__title">Servicio y mezcla</h3>
@@ -797,6 +911,68 @@ export default function AdminProductsPage() {
                       onChange={(e) => set("producer", e.target.value)}
                       placeholder="Catena Zapata"
                     />
+                  </label>
+
+                  <label className="admin-field">
+                    <span>Varietal / blend</span>
+                    <input
+                      value={form.varietal ?? ""}
+                      onChange={(e) => set("varietal", e.target.value)}
+                      placeholder="100% Malbec · Cabernet 60% Merlot 40%"
+                    />
+                  </label>
+
+                  <label className="admin-field">
+                    <span>Paso por barrica</span>
+                    <select
+                      value={
+                        form.oakAging === null ? "" : form.oakAging ? "yes" : "no"
+                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        set("oakAging", v === "" ? null : v === "yes");
+                      }}
+                    >
+                      <option value="">Sin especificar</option>
+                      <option value="yes">Sí (crianza en madera)</option>
+                      <option value="no">No</option>
+                    </select>
+                  </label>
+
+                  <label className="admin-field">
+                    <span>Nivel de taninos</span>
+                    <select
+                      value={form.tanninLevel ?? ""}
+                      onChange={(e) =>
+                        set(
+                          "tanninLevel",
+                          (e.target.value as WineSensoryLevel) || null,
+                        )
+                      }
+                    >
+                      <option value="">— Sin especificar —</option>
+                      <option value="LOW">Bajo</option>
+                      <option value="MEDIUM">Medio</option>
+                      <option value="HIGH">Alto</option>
+                    </select>
+                  </label>
+
+                  <label className="admin-field">
+                    <span>Nivel de acidez</span>
+                    <select
+                      value={form.acidityLevel ?? ""}
+                      onChange={(e) =>
+                        set(
+                          "acidityLevel",
+                          (e.target.value as WineSensoryLevel) || null,
+                        )
+                      }
+                    >
+                      <option value="">— Sin especificar —</option>
+                      <option value="LOW">Baja</option>
+                      <option value="MEDIUM">Media</option>
+                      <option value="HIGH">Alta</option>
+                    </select>
                   </label>
                 </div>
 

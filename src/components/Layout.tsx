@@ -37,6 +37,36 @@ type NavSubcategory = {
   label: string;
 };
 
+/** Ruta «inicio» de categoría: slug corto en la raíz (p. ej. /cerveza). */
+function categoryHomeHref(slug: string): string {
+  return `/${slug}`;
+}
+
+function categorySubHref(categorySlug: string, subSlug: string): string {
+  return `/${categorySlug}/${subSlug}`;
+}
+
+/** Incluye URLs largas legadas (/categoria/…) para marcar el enlace activo. */
+function pathnameIsUnderCategory(pathname: string, categorySlug: string): boolean {
+  if (pathname === `/${categorySlug}` || pathname === `/categoria/${categorySlug}`) {
+    return true;
+  }
+  return (
+    pathname.startsWith(`/${categorySlug}/`) || pathname.startsWith(`/categoria/${categorySlug}/`)
+  );
+}
+
+function pathnameIsCategoryHome(pathname: string, categorySlug: string): boolean {
+  return pathname === `/${categorySlug}` || pathname === `/categoria/${categorySlug}`;
+}
+
+function pathnameIsCategorySub(pathname: string, categorySlug: string, subSlug: string): boolean {
+  return (
+    pathname === categorySubHref(categorySlug, subSlug) ||
+    pathname === `/categoria/${categorySlug}/${subSlug}`
+  );
+}
+
 function getAperitifSubcategories(guide: GuideDetail | null): NavSubcategory[] {
   if (!guide) {
     return [];
@@ -114,8 +144,20 @@ export default function Layout() {
 
     void (async () => {
       try {
-        const [nextCategories, distillateGuide, wineGuide, beerGuide, aperitifGuide, liqueurGuide] = await Promise.all([
-          getCategories(),
+        const nextCategories = await getCategories();
+        if (active) {
+          setCategories(nextCategories);
+        }
+      } catch {
+        if (active) {
+          setCategories([]);
+        }
+      }
+    })();
+
+    void (async () => {
+      try {
+        const [distillateGuide, wineGuide, beerGuide, aperitifGuide, liqueurGuide] = await Promise.all([
           getGuideByCategorySlug("destilados"),
           getGuideByCategorySlug("vino"),
           getGuideByCategorySlug("cerveza"),
@@ -124,7 +166,6 @@ export default function Layout() {
         ]);
 
         if (active) {
-          setCategories(nextCategories);
           setDistillateTabs(
             (distillateGuide?.tabs ?? []).filter((tab) => isSpiritGuideTabSlug(tab.slug)),
           );
@@ -135,7 +176,6 @@ export default function Layout() {
         }
       } catch {
         if (active) {
-          setCategories([]);
           setDistillateTabs([]);
           setWineSubcategories([]);
           setBeerSubcategories([]);
@@ -217,8 +257,12 @@ export default function Layout() {
                   >
                     <div className="nav__item-row">
                       <NavLink
-                        to={`/categoria/${category.slug}`}
-                        className="nav__link"
+                        to={categoryHomeHref(category.slug)}
+                        className={() =>
+                          `nav__link${
+                            pathnameIsUnderCategory(location.pathname, category.slug) ? " active" : ""
+                          }`
+                        }
                         onClick={handleNavLinkClick}
                       >
                         {category.title}
@@ -254,11 +298,30 @@ export default function Layout() {
                               : "Subcategorías de licores"
                         }
                       >
+                        <li key={`${category.slug}-inicio`}>
+                          <NavLink
+                            to={categoryHomeHref(category.slug)}
+                            className={() =>
+                              `nav__sublink${
+                                pathnameIsCategoryHome(location.pathname, category.slug) ? " active" : ""
+                              }`
+                            }
+                            onClick={handleNavLinkClick}
+                          >
+                            Inicio
+                          </NavLink>
+                        </li>
                         {submenuItems.map((item) => (
                           <li key={`${category.slug}-${item.slug}`}>
                             <NavLink
-                              to={`/categoria/${category.slug}/${item.slug}`}
-                              className="nav__sublink"
+                              to={categorySubHref(category.slug, item.slug)}
+                              className={() =>
+                                `nav__sublink${
+                                  pathnameIsCategorySub(location.pathname, category.slug, item.slug)
+                                    ? " active"
+                                    : ""
+                                }`
+                              }
                               onClick={handleNavLinkClick}
                             >
                               {item.label}

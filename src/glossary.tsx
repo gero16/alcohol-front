@@ -11,18 +11,44 @@ import { Link } from "react-router-dom";
 import { getGlossary } from "./api/client";
 import type { GlossaryItem } from "./api/types";
 
+export type GlossaryLinkIndex = {
+  regex: RegExp | null;
+  itemByTerm: Map<string, GlossaryItem>;
+};
+
 type GlossaryContextValue = {
   items: GlossaryItem[];
   loading: boolean;
+  linkIndex: GlossaryLinkIndex;
 };
+
+const emptyLinkIndex: GlossaryLinkIndex = { regex: null, itemByTerm: new Map() };
 
 const GlossaryContext = createContext<GlossaryContextValue>({
   items: [],
   loading: true,
+  linkIndex: emptyLinkIndex,
 });
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildLinkIndex(items: GlossaryItem[]): GlossaryLinkIndex {
+  if (items.length === 0) {
+    return { regex: null, itemByTerm: new Map() };
+  }
+
+  const sorted = [...items].sort((a, b) => b.term.length - a.term.length);
+  const itemByTerm = new Map<string, GlossaryItem>();
+  for (const item of sorted) {
+    itemByTerm.set(item.term.toLocaleLowerCase("es"), item);
+  }
+
+  const alternatives = sorted.map((item) => escapeRegExp(item.term)).join("|");
+  const regex = new RegExp(`(^|[^\\p{L}\\p{N}])(${alternatives})(?=$|[^\\p{L}\\p{N}])`, "giu");
+
+  return { regex, itemByTerm };
 }
 
 export function GlossaryProvider({ children }: { children: ReactNode }) {
@@ -55,12 +81,15 @@ export function GlossaryProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const linkIndex = useMemo(() => buildLinkIndex(items), [items]);
+
   const value = useMemo(
     () => ({
       items,
       loading,
+      linkIndex,
     }),
-    [items, loading],
+    [items, loading, linkIndex],
   );
 
   return <GlossaryContext.Provider value={value}>{children}</GlossaryContext.Provider>;

@@ -63,6 +63,8 @@ const tableColumnOptions: Array<GuideTableColumn["key"]> = [
   "composition",
   "objective",
   "description",
+  "description2",
+  "maridaje",
   "notes",
   "reference",
   "abv",
@@ -77,6 +79,7 @@ const tableColumnOptions: Array<GuideTableColumn["key"]> = [
   "visualColor",
   "tannins",
   "acidity",
+  "category",
   "examples",
 ];
 const INVALID_TABLE_SECTION_MESSAGE =
@@ -163,6 +166,8 @@ function createEmptyRow(): GuideTableRowInput {
     composition: "",
     objective: "",
     description: "",
+    description2: "",
+    maridaje: "",
     notes: "",
     reference: "",
     abv: "",
@@ -177,6 +182,7 @@ function createEmptyRow(): GuideTableRowInput {
     visualColor: "",
     tannins: "",
     acidity: "",
+    category: "",
     examples: "",
     imageUrl: "",
     imageAlt: "",
@@ -246,6 +252,8 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
           composition: row.composition ?? "",
           objective: row.objective ?? "",
           description: row.description ?? "",
+          description2: row.description2 ?? "",
+          maridaje: row.maridaje ?? "",
           notes: row.notes ?? "",
           reference: row.reference ?? "",
           abv: row.abv ?? "",
@@ -260,6 +268,7 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
           visualColor: row.visualColor ?? "",
           tannins: row.tannins ?? "",
           acidity: row.acidity ?? "",
+          category: row.category ?? "",
           examples: row.examples ?? "",
           imageUrl: row.imageUrl ?? "",
           imageAlt: row.imageAlt ?? "",
@@ -314,6 +323,8 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
           composition: emptyToUndefined(row.composition),
           objective: emptyToUndefined(row.objective),
           description: emptyToUndefined(row.description),
+          description2: emptyToUndefined(row.description2),
+          maridaje: emptyToUndefined(row.maridaje),
           notes: emptyToUndefined(row.notes),
           reference: emptyToUndefined(row.reference),
           abv: emptyToUndefined(row.abv),
@@ -328,6 +339,7 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
           visualColor: emptyToUndefined(row.visualColor),
           tannins: emptyToUndefined(row.tannins),
           acidity: emptyToUndefined(row.acidity),
+          category: emptyToUndefined(row.category),
           examples: emptyToUndefined(row.examples),
           imageUrl: emptyToUndefined(row.imageUrl),
           imageAlt: emptyToUndefined(row.imageAlt),
@@ -2189,6 +2201,18 @@ export default function AdminGuidesPage() {
                                               }
                                             />
                                           </label>
+                                          <label className="admin-field">
+                                            <span>Categoría (dato de fila)</span>
+                                            <input
+                                              value={row.category ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[rowIndex].category =
+                                                    event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
                                         </div>
 
                                         <div className="admin-form__grid admin-form__grid--triple">
@@ -2264,6 +2288,32 @@ export default function AdminGuidesPage() {
                                                   draft.tabs[tabIndex].tables[tableIndex].rows[
                                                     rowIndex
                                                   ].description = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Descripción 2</span>
+                                            <input
+                                              value={row.description2 ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].description2 = event.target.value;
+                                                })
+                                              }
+                                            />
+                                          </label>
+                                          <label className="admin-field">
+                                            <span>Maridaje</span>
+                                            <input
+                                              value={row.maridaje ?? ""}
+                                              onChange={(event) =>
+                                                updateGuide((draft) => {
+                                                  draft.tabs[tabIndex].tables[tableIndex].rows[
+                                                    rowIndex
+                                                  ].maridaje = event.target.value;
                                                 })
                                               }
                                             />

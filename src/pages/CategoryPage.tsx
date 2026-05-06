@@ -12,6 +12,7 @@ import type {
   GuideTableRow,
   Product,
   WhiskyType,
+  WineSensoryLevel,
   WineType,
 } from "../api/types";
 import { ZoomableCoverImg, ZoomableImage } from "../components/ImageLightbox";
@@ -629,6 +630,8 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
             {renderField("Intensidad", row.intensity)}
             {renderField("Bitterness (IBU)", row.bitternessIbu)}
             {renderField("Description", row.description)}
+            {renderField("Descripción 2", row.description2)}
+            {renderField("Maridaje", row.maridaje)}
             {renderField("Notas", row.notes)}
             {renderField("Finish", row.finish)}
             {renderField("Region / Origin", row.regionOrigin)}
@@ -637,6 +640,7 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
             {renderField("Acidity", row.acidity)}
             {renderField("Composicion", row.composition)}
             {renderField("Objetivo", row.objective)}
+            {renderField("Categoria", row.category)}
             {renderField("ABV", row.abv)}
             {renderField("Reference", row.reference, true)}
             {renderField("Ejemplos", row.examples, true)}
@@ -815,6 +819,18 @@ const BODY_DENSITY_LABELS: Record<BodyDensity, string> = {
   HIGH:        "Cuerpo pleno",
 };
 
+const TANNIN_LEVEL_LABELS: Record<WineSensoryLevel, string> = {
+  LOW:    "bajos",
+  MEDIUM: "medios",
+  HIGH:   "altos",
+};
+
+const ACIDITY_LEVEL_LABELS: Record<WineSensoryLevel, string> = {
+  LOW:    "baja",
+  MEDIUM: "media",
+  HIGH:   "alta",
+};
+
 function ProductCard({ product }: { product: Product }) {
   const typeLabel =
     product.whiskyType ? WHISKY_TYPE_LABELS[product.whiskyType] :
@@ -855,6 +871,15 @@ function ProductCard({ product }: { product: Product }) {
             {product.isPeated ? (
               <span className="product-badge product-badge--peated">Ahumado</span>
             ) : null}
+            {product.vintage ? (
+              <span className="product-badge">Cosecha {product.vintage}</span>
+            ) : null}
+            {product.oakAging === true ? (
+              <span className="product-badge">Barrica</span>
+            ) : null}
+            {product.isOrganic === true ? (
+              <span className="product-badge product-badge--organic">Orgánico</span>
+            ) : null}
             {product.bodyDensity ? (
               <span className="product-badge product-badge--body">{BODY_DENSITY_LABELS[product.bodyDensity]}</span>
             ) : null}
@@ -866,11 +891,13 @@ function ProductCard({ product }: { product: Product }) {
 
         {product.shortDescription ? (
           <p className="product-card__description product-card__description--short">
-            {product.shortDescription}
+            <GlossaryText text={product.shortDescription} />
           </p>
         ) : null}
         {product.longDescription ? (
-          <p className="product-card__description">{product.longDescription}</p>
+          <p className="product-card__description">
+            <GlossaryText text={product.longDescription} />
+          </p>
         ) : null}
 
         {product.tastingColor || (product.tastingNose?.length ?? 0) > 0 || (product.tastingPalate?.length ?? 0) > 0 ? (
@@ -878,32 +905,66 @@ function ProductCard({ product }: { product: Product }) {
             {product.tastingColor ? (
               <>
                 <dt>Color</dt>
-                <dd>{product.tastingColor}</dd>
+                <dd>
+                  <GlossaryText text={product.tastingColor} />
+                </dd>
               </>
             ) : null}
             {(product.tastingNose?.length ?? 0) > 0 ? (
               <>
                 <dt>Nariz</dt>
-                <dd>{product.tastingNose!.join(" · ")}</dd>
+                <dd>
+                  <GlossaryText text={product.tastingNose!.join(" · ")} />
+                </dd>
               </>
             ) : null}
             {(product.tastingPalate?.length ?? 0) > 0 ? (
               <>
                 <dt>Paladar</dt>
-                <dd>{product.tastingPalate!.join(" · ")}</dd>
+                <dd>
+                  <GlossaryText text={product.tastingPalate!.join(" · ")} />
+                </dd>
               </>
             ) : null}
             {product.tastingFinish ? (
               <>
                 <dt>Final</dt>
-                <dd>{product.tastingFinish}</dd>
+                <dd>
+                  <GlossaryText text={product.tastingFinish} />
+                </dd>
               </>
             ) : null}
           </dl>
         ) : null}
 
         {grapeList ? (
-          <p className="product-card__grapes"><strong>Cepas:</strong> {grapeList}</p>
+          <p className="product-card__grapes">
+            <strong>Cepas:</strong> <GlossaryText text={grapeList} />
+          </p>
+        ) : null}
+
+        {product.varietal ? (
+          <p className="product-card__grapes">
+            <strong>Varietal:</strong> <GlossaryText text={product.varietal} />
+          </p>
+        ) : null}
+
+        {product.tanninLevel || product.acidityLevel ? (
+          <p className="product-card__grapes">
+            {product.tanninLevel ? (
+              <>
+                <strong>Taninos:</strong>{" "}
+                <GlossaryText text={TANNIN_LEVEL_LABELS[product.tanninLevel]} />
+              </>
+            ) : null}
+            {product.tanninLevel && product.acidityLevel ? " · " : null}
+            {product.acidityLevel ? (
+              <>
+                <strong>Acidez:</strong>{" "}
+                <GlossaryText text={ACIDITY_LEVEL_LABELS[product.acidityLevel]} />
+              </>
+            ) : null}
+          </p>
         ) : null}
 
         {product.servingSuggestion || product.mixingRatio ? (
@@ -911,13 +972,17 @@ function ProductCard({ product }: { product: Product }) {
             {product.servingSuggestion ? (
               <>
                 <dt>Servir</dt>
-                <dd>{product.servingSuggestion}</dd>
+                <dd>
+                  <GlossaryText text={product.servingSuggestion} />
+                </dd>
               </>
             ) : null}
             {product.mixingRatio ? (
               <>
                 <dt>Mezcla</dt>
-                <dd>{product.mixingRatio}</dd>
+                <dd>
+                  <GlossaryText text={product.mixingRatio} />
+                </dd>
               </>
             ) : null}
           </dl>
@@ -925,14 +990,16 @@ function ProductCard({ product }: { product: Product }) {
 
         {(product.pairings?.length ?? 0) > 0 ? (
           <p className="product-card__pairings">
-            <strong>Maridaje:</strong> {product.pairings!.join(", ")}
+            <strong>Maridaje:</strong> <GlossaryText text={product.pairings!.join(", ")} />
           </p>
         ) : null}
 
         {(product.tags?.length ?? 0) > 0 ? (
           <ul className="product-card__tags">
             {product.tags!.map((tag) => (
-              <li key={tag} className="product-tag">{tag}</li>
+              <li key={tag} className="product-tag">
+                <GlossaryText text={tag} />
+              </li>
             ))}
           </ul>
         ) : null}
@@ -1067,6 +1134,9 @@ export default function CategoryPage() {
         return buildAperitifSubcategoryViewTabs(selectedSubcategory.tab);
       }
       if (guide.category.slug === "licores") {
+        return buildAperitifSubcategoryViewTabs(selectedSubcategory.tab);
+      }
+      if (guide.category.slug === "vino") {
         return buildAperitifSubcategoryViewTabs(selectedSubcategory.tab);
       }
       return [selectedSubcategory.tab];

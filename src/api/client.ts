@@ -12,8 +12,24 @@ import type {
   ProductInput,
 } from "./types";
 
-const DEFAULT_API_BASE_URL = "https://alcohol-api-qn53.onrender.com";
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/$/, "");
+/**
+ * URL base del API. En desarrollo, si no hay variable, se usa localhost.
+ * En producción (`vite build`) hace falta `VITE_API_BASE_URL` en el entorno de build.
+ */
+function resolveApiBaseUrl(): string {
+  const fromEnv = import.meta.env.VITE_API_BASE_URL;
+  if (typeof fromEnv === "string" && fromEnv.trim().length > 0) {
+    return fromEnv.trim().replace(/\/$/, "");
+  }
+  if (import.meta.env.DEV) {
+    return "http://localhost:3001".replace(/\/$/, "");
+  }
+  throw new Error(
+    "VITE_API_BASE_URL no está definida. En builds de producción debes definirla en el entorno donde corre `vite build` (p. ej. Railway), con la URL pública del backend.",
+  );
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export class ApiError extends Error {
   status: number;

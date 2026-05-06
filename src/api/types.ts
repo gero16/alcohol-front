@@ -37,6 +37,8 @@ export type GuideTableColumn = {
     | "composition"
     | "objective"
     | "description"
+    | "description2"
+    | "maridaje"
     | "notes"
     | "reference"
     | "abv"
@@ -51,6 +53,7 @@ export type GuideTableColumn = {
     | "visualColor"
     | "tannins"
     | "acidity"
+    | "category"
     | "examples";
   label: string;
 };
@@ -61,6 +64,8 @@ export type GuideTableRow = {
   composition?: string;
   objective?: string;
   description?: string;
+  description2?: string;
+  maridaje?: string;
   notes?: string;
   reference?: string;
   abv?: string;
@@ -75,6 +80,7 @@ export type GuideTableRow = {
   visualColor?: string;
   tannins?: string;
   acidity?: string;
+  category?: string;
   examples?: string;
   imageUrl?: string;
   imageAlt?: string;
@@ -97,6 +103,8 @@ export type GuideTableRowInput = {
   composition?: string;
   objective?: string;
   description?: string;
+  description2?: string;
+  maridaje?: string;
   notes?: string;
   reference?: string;
   abv?: string;
@@ -111,6 +119,7 @@ export type GuideTableRowInput = {
   visualColor?: string;
   tannins?: string;
   acidity?: string;
+  category?: string;
   examples?: string;
   imageUrl?: string;
   imageAlt?: string;
@@ -246,6 +255,9 @@ export type BodyDensity =
   | "MEDIUM_HIGH"
   | "HIGH";
 
+/** Taninos (tintos), acidez percibida (blancos), escala editorial. */
+export type WineSensoryLevel = "LOW" | "MEDIUM" | "HIGH";
+
 export type WineGrape = {
   grape: string;
   percentage?: number;
@@ -297,6 +309,12 @@ export type Product = {
   wineStyle?: WineStyle | null;
   vintage?: number | null;
   producer?: string | null;
+  /** Varietal o descripción del blend (100% una cepa vs mezcla). */
+  varietal?: string | null;
+  /** Paso por barrica (complementa estilos tipo Reserva). */
+  oakAging?: boolean | null;
+  tanninLevel?: WineSensoryLevel | null;
+  acidityLevel?: WineSensoryLevel | null;
   grapes?: WineGrape[] | null;
   // Cerveza
   beerStyle?: string | null;
@@ -304,6 +322,14 @@ export type Product = {
   beerColor?: string | null;
   // Maridajes
   pairings?: string[] | null;
+  /** Apto para celíacos (según etiquetado o criterio editorial). */
+  celiacFriendly?: boolean | null;
+  /** Apto vegano. */
+  veganFriendly?: boolean | null;
+  /** Elaboración orgánica / ecológica. */
+  isOrganic?: boolean | null;
+  /** Nota libre (aclaraciones dietarias, advertencias, fuente del dato). */
+  note?: string | null;
 };
 
 export type ProductInput = Omit<Product, "id" | "featured"> & {

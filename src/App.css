@@ -1953,6 +1953,12 @@
   background: rgba(139, 115, 85, 0.15);
 }
 
+.product-badge--organic {
+  border-color: rgba(76, 175, 80, 0.45);
+  color: #81c784;
+  background: rgba(76, 175, 80, 0.12);
+}
+
 .product-badge--body {
   border-color: rgba(244, 235, 228, 0.2);
   color: var(--text-muted);

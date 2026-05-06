@@ -8,6 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+
+# Variables locales (copia .env.example a .env)
+.env
+
 dist
 dist-ssr
 *.local
