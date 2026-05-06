@@ -1047,12 +1047,12 @@ export default function CategoryPage() {
       setLoading(true);
       setError(null);
       setNotFound(false);
+      setProducts([]);
 
       try {
-        const [nextCategory, nextGuide, nextProducts] = await Promise.all([
+        const [nextCategory, nextGuide] = await Promise.all([
           getCategoryBySlug(id),
           getGuideByCategorySlug(id),
-          getProducts({ categorySlug: id }),
         ]);
 
         if (!active) {
@@ -1061,7 +1061,6 @@ export default function CategoryPage() {
 
         setCategory(nextCategory);
         setGuide(nextGuide);
-        setProducts(nextProducts);
         setActiveTabSlug(nextGuide?.tabs[0]?.slug ?? "");
       } catch (err) {
         if (!active) {
@@ -1077,6 +1076,19 @@ export default function CategoryPage() {
       } finally {
         if (active) {
           setLoading(false);
+        }
+      }
+    })();
+
+    void (async () => {
+      try {
+        const nextProducts = await getProducts({ categorySlug: id });
+        if (active) {
+          setProducts(nextProducts);
+        }
+      } catch {
+        if (active) {
+          setProducts([]);
         }
       }
     })();
@@ -1228,7 +1240,13 @@ export default function CategoryPage() {
         ← Todas las categorías
       </Link>
       {showDetailImage ? (
-        <ZoomableCoverImg className="detail__image detail__image--zoomable" src={detailImageUrl} alt={detailImageAlt} />
+        <ZoomableCoverImg
+          className="detail__image detail__image--zoomable"
+          src={detailImageUrl}
+          alt={detailImageAlt}
+          loading="eager"
+          fetchPriority="high"
+        />
       ) : null}
       <header className="detail__header">
         <p className="hero__eyebrow">{detailEyebrow}</p>

@@ -106,31 +106,16 @@ export function GlossaryText({
   text: string;
   excludeSlugs?: string[];
 }) {
-  const { items } = useGlossary();
+  const { linkIndex: baseIndex, items } = useGlossary();
 
-  const activeItems = useMemo(
-    () => items.filter((item) => !excludeSlugs.includes(item.slug)).sort((a, b) => b.term.length - a.term.length),
-    [excludeSlugs, items],
-  );
-
-  const itemByTerm = useMemo(() => {
-    const map = new Map<string, GlossaryItem>();
-
-    for (const item of activeItems) {
-      map.set(item.term.toLocaleLowerCase("es"), item);
+  const { regex, itemByTerm } = useMemo(() => {
+    if (excludeSlugs.length === 0) {
+      return baseIndex;
     }
 
-    return map;
-  }, [activeItems]);
-
-  const regex = useMemo(() => {
-    if (activeItems.length === 0) {
-      return null;
-    }
-
-    const alternatives = activeItems.map((item) => escapeRegExp(item.term)).join("|");
-    return new RegExp(`(^|[^\\p{L}\\p{N}])(${alternatives})(?=$|[^\\p{L}\\p{N}])`, "giu");
-  }, [activeItems]);
+    const filtered = items.filter((item) => !excludeSlugs.includes(item.slug));
+    return buildLinkIndex(filtered);
+  }, [baseIndex, excludeSlugs, items]);
 
   const content = useMemo(() => {
     if (!regex || text.length === 0) {

@@ -93,7 +93,7 @@ export default function HomePage() {
               className="category-slider"
               aria-label="Categorías de bebidas alcohólicas"
             >
-              {categories.map((item) => (
+              {categories.map((item, index) => (
                 <li key={item.id} className="category-slider__item">
                   <article className="category-slide">
                     <ZoomableImage
@@ -101,7 +101,8 @@ export default function HomePage() {
                       alt={item.imageAlt}
                       className="category-slide__image"
                       wrapperClassName="category-slide__image-hit"
-                      loading="lazy"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      fetchPriority={index === 0 ? "high" : undefined}
                     />
                     <div className="category-slide__overlay">
                       <p className="category-slide__eyebrow">Categoría</p>

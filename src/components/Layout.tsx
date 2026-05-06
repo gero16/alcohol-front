@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { getCategories, getGuideByCategorySlug } from "../api/client";
 import { ImageLightboxProvider } from "./ImageLightbox";
@@ -348,7 +348,9 @@ export default function Layout() {
         ) : null}
       </nav>
       <ImageLightboxProvider>
-        <Outlet />
+        <Suspense fallback={<p className="status-message">Cargando…</p>}>
+          <Outlet />
+        </Suspense>
       </ImageLightboxProvider>
     </div>
   );

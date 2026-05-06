@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 const adminLinks = [
@@ -43,7 +44,9 @@ export default function AdminLayout() {
           pero todavia no tiene autenticacion. No deberia exponerse publicamente sin una capa minima
           de proteccion.
         </aside>
-        <Outlet />
+        <Suspense fallback={<p className="status-message">Cargando panel…</p>}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );
