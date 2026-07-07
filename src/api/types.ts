@@ -143,6 +143,7 @@ export type GuideSection = {
   imageUrl: string;
   imageAlt: string;
   semanticKey?: string;
+  showInNav?: boolean;
   paragraphs: string[];
 };
 
@@ -153,6 +154,7 @@ export type GuideSectionInput = {
   imageUrl: string;
   imageAlt: string;
   semanticKey?: string;
+  showInNav?: boolean;
   paragraphs: string[];
 };
 
@@ -184,6 +186,7 @@ export type GuideTab = {
   noteTitle?: string;
   noteContent?: string;
   semanticKey?: string;
+  showInNav?: boolean;
   classifications: GuideClassification[];
   sections: GuideSection[];
   tables: GuideTable[];
@@ -197,6 +200,7 @@ export type GuideTabInput = {
   noteTitle?: string;
   noteContent?: string;
   semanticKey?: string;
+  showInNav?: boolean;
   classifications: GuideClassificationInput[];
   sections: GuideSectionInput[];
   tables: GuideTableInput[];

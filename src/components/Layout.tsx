@@ -1,36 +1,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { getCategories, getGuideByCategorySlug } from "../api/client";
+import { getGuideNavItems } from "../guideNav";
 import { ImageLightboxProvider } from "./ImageLightbox";
-import type { Category, GuideDetail, GuideTab } from "../api/types";
-
-function isSpiritGuideTabSlug(slug: string): boolean {
-  return slug.endsWith("-guia");
-}
-
-function toSpiritSubcategorySlug(tabSlug: string): string {
-  return tabSlug.replace(/-guia$/, "");
-}
-
-function toSpiritDisplayLabel(label: string): string {
-  return label.replace(/\s+desde\s+cero$/i, "");
-}
-
-function isAperitifSubcategorySourceTabSlug(slug: string): boolean {
-  return slug === "ejemplos" || slug === "marcas-y-estilos";
-}
-
-function isWineSubcategorySourceTabSlug(slug: string): boolean {
-  return slug === "estilos";
-}
-
-function isBeerSubcategorySourceTabSlug(slug: string): boolean {
-  return slug === "por-color";
-}
-
-function isLiqueurSubcategoryTabSlug(slug: string): boolean {
-  return !["que-son", "elaboracion", "familias", "servicio", "ejemplos"].includes(slug);
-}
+import type { Category, GuideDetail } from "../api/types";
 
 type NavSubcategory = {
   slug: string;
@@ -67,75 +40,18 @@ function pathnameIsCategorySub(pathname: string, categorySlug: string, subSlug: 
   );
 }
 
-function getAperitifSubcategories(guide: GuideDetail | null): NavSubcategory[] {
+function getNavSubcategories(guide: GuideDetail | null): NavSubcategory[] {
   if (!guide) {
     return [];
   }
 
-  return guide.tabs
-    .filter((tab) => isAperitifSubcategorySourceTabSlug(tab.slug))
-    .flatMap((sourceTab) =>
-      sourceTab.sections.map((section) => {
-        const dedicatedTab = guide.tabs.find((t) => t.slug === section.slug);
-        return {
-          slug: section.slug,
-          label: dedicatedTab?.label ?? section.title,
-        };
-      }),
-    );
-}
-
-function getWineSubcategories(guide: GuideDetail | null): NavSubcategory[] {
-  if (!guide) {
-    return [];
-  }
-
-  return guide.tabs
-    .filter((tab) => isWineSubcategorySourceTabSlug(tab.slug))
-    .flatMap((tab) =>
-      tab.sections.map((section) => ({
-        slug: section.slug,
-        label: section.title.replace(/^\d+\.\s*/, ""),
-      })),
-    );
-}
-
-function getBeerSubcategories(guide: GuideDetail | null): NavSubcategory[] {
-  if (!guide) {
-    return [];
-  }
-
-  return guide.tabs
-    .filter((tab) => isBeerSubcategorySourceTabSlug(tab.slug))
-    .flatMap((tab) =>
-      tab.sections.map((section) => ({
-        slug: section.slug,
-        label: section.title.replace(/^Cervezas\s+/i, ""),
-      })),
-    );
-}
-
-function getLiqueurSubcategories(guide: GuideDetail | null): NavSubcategory[] {
-  if (!guide) {
-    return [];
-  }
-
-  return guide.tabs
-    .filter((tab) => isLiqueurSubcategoryTabSlug(tab.slug))
-    .map((tab) => ({
-      slug: tab.slug,
-      label: tab.label,
-    }));
+  return getGuideNavItems(guide);
 }
 
 export default function Layout() {
   const location = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [distillateTabs, setDistillateTabs] = useState<GuideTab[]>([]);
-  const [wineSubcategories, setWineSubcategories] = useState<NavSubcategory[]>([]);
-  const [beerSubcategories, setBeerSubcategories] = useState<NavSubcategory[]>([]);
-  const [aperitifSubcategories, setAperitifSubcategories] = useState<NavSubcategory[]>([]);
-  const [liqueurSubcategories, setLiqueurSubcategories] = useState<NavSubcategory[]>([]);
+  const [guideNavByCategory, setGuideNavByCategory] = useState<Record<string, NavSubcategory[]>>({});
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedCategorySlug, setExpandedCategorySlug] = useState<string | null>(null);
 
@@ -166,21 +82,17 @@ export default function Layout() {
         ]);
 
         if (active) {
-          setDistillateTabs(
-            (distillateGuide?.tabs ?? []).filter((tab) => isSpiritGuideTabSlug(tab.slug)),
-          );
-          setWineSubcategories(getWineSubcategories(wineGuide));
-          setBeerSubcategories(getBeerSubcategories(beerGuide));
-          setAperitifSubcategories(getAperitifSubcategories(aperitifGuide));
-          setLiqueurSubcategories(getLiqueurSubcategories(liqueurGuide));
+          setGuideNavByCategory({
+            destilados: getNavSubcategories(distillateGuide),
+            vino: getNavSubcategories(wineGuide),
+            cerveza: getNavSubcategories(beerGuide),
+            aperitivos: getNavSubcategories(aperitifGuide),
+            licores: getNavSubcategories(liqueurGuide),
+          });
         }
       } catch {
         if (active) {
-          setDistillateTabs([]);
-          setWineSubcategories([]);
-          setBeerSubcategories([]);
-          setAperitifSubcategories([]);
-          setLiqueurSubcategories([]);
+          setGuideNavByCategory({});
         }
       }
     })();
@@ -230,25 +142,7 @@ export default function Layout() {
               </li>
        
               {categories.map((category) => {
-                const isDistillates = category.slug === "destilados";
-                const isWines = category.slug === "vino";
-                const isBeers = category.slug === "cerveza";
-                const isAperitifs = category.slug === "aperitivos";
-                const isLiqueurs = category.slug === "licores";
-                const submenuItems = isDistillates
-                  ? distillateTabs.map((tab) => ({
-                      slug: toSpiritSubcategorySlug(tab.slug),
-                      label: toSpiritDisplayLabel(tab.label),
-                    }))
-                  : isWines
-                    ? wineSubcategories
-                  : isBeers
-                    ? beerSubcategories
-                  : isAperitifs
-                    ? aperitifSubcategories
-                    : isLiqueurs
-                      ? liqueurSubcategories
-                    : [];
+                const submenuItems = guideNavByCategory[category.slug] ?? [];
 
                 return (
                   <li
@@ -286,17 +180,7 @@ export default function Layout() {
                     {submenuItems.length > 0 ? (
                       <ul
                         className={`nav__submenu ${expandedCategorySlug === category.slug ? "nav__submenu--open" : ""}`}
-                        aria-label={
-                          isDistillates
-                            ? "Subcategorías de destilados"
-                            : isWines
-                              ? "Subcategorías de vinos"
-                            : isBeers
-                              ? "Subcategorías de cervezas"
-                            : isAperitifs
-                              ? "Subcategorías de aperitivos"
-                              : "Subcategorías de licores"
-                        }
+                        aria-label={`Subcategorías de ${category.title}`}
                       >
                         <li key={`${category.slug}-inicio`}>
                           <NavLink

@@ -1558,6 +1558,17 @@
   grid-column: 1 / -1;
 }
 
+.admin-field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.admin-field--checkbox input {
+  width: auto;
+  margin: 0;
+}
+
 .admin-field__hint {
   display: block;
   margin: 0;

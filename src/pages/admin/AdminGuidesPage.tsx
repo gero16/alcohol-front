@@ -120,6 +120,7 @@ function createEmptyTab(position: number): GuideTabInput {
     noteTitle: "",
     noteContent: "",
     semanticKey: "",
+    showInNav: false,
     classifications: [],
     sections: [],
     tables: [],
@@ -142,6 +143,7 @@ function createEmptySection(): GuideSectionInput {
     imageUrl: "",
     imageAlt: "",
     semanticKey: "",
+    showInNav: false,
     paragraphs: [""],
   };
 }
@@ -224,6 +226,7 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
       noteTitle: tab.noteTitle ?? "",
       noteContent: tab.noteContent ?? "",
       semanticKey: tab.semanticKey ?? "",
+      showInNav: tab.showInNav,
       classifications: (tab.classifications ?? []).map((c) => ({
         slug: c.slug,
         blocks:
@@ -239,6 +242,7 @@ function guideDetailToInput(detail: GuideDetail): GuideInput {
         imageUrl: section.imageUrl,
         imageAlt: section.imageAlt,
         semanticKey: section.semanticKey ?? "",
+        showInNav: section.showInNav,
         paragraphs: [...section.paragraphs],
       })),
       tables: tab.tables.map((table) => ({
@@ -290,6 +294,7 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
       noteTitle: emptyToUndefined(tab.noteTitle),
       noteContent: emptyToUndefined(tab.noteContent),
       semanticKey: emptyToUndefined(tab.semanticKey),
+      showInNav: tab.showInNav,
       classifications: (tab.classifications ?? [])
         .filter((c) => {
           const cleaned = sanitizeClassificationBlocks(c.blocks ?? []);
@@ -307,6 +312,7 @@ function normalizeGuideForSave(guide: GuideInput): GuideInput {
         imageUrl: section.imageUrl.trim(),
         imageAlt: section.imageAlt.trim(),
         semanticKey: emptyToUndefined(section.semanticKey),
+        showInNav: section.showInNav,
         paragraphs: section.paragraphs.map((paragraph) => paragraph.trim()).filter(Boolean),
       })),
       tables: tab.tables.map((table) => ({
@@ -1045,6 +1051,19 @@ export default function AdminGuidesPage() {
                             </label>
                           </div>
 
+                          <label className="admin-field admin-field--checkbox">
+                            <input
+                              type="checkbox"
+                              checked={tab.showInNav === true}
+                              onChange={(event) =>
+                                updateGuide((draft) => {
+                                  draft.tabs[tabIndex].showInNav = event.target.checked;
+                                })
+                              }
+                            />
+                            <span>Mostrar en el menú de navegación</span>
+                          </label>
+
                           <label className="admin-field admin-field--full">
                             <span>Tipo semántico de la pestaña (vino, destilados, licores…)</span>
                             <select
@@ -1647,6 +1666,20 @@ export default function AdminGuidesPage() {
                                     />
                                   </label>
                                 </div>
+
+                                <label className="admin-field admin-field--checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={activeSection.showInNav === true}
+                                    onChange={(event) =>
+                                      updateGuide((draft) => {
+                                        draft.tabs[tabIndex].sections[activeSectionIndex].showInNav =
+                                          event.target.checked;
+                                      })
+                                    }
+                                  />
+                                  <span>Mostrar en el menú de navegación</span>
+                                </label>
 
                                 <label className="admin-field admin-field--full">
                                   <span>Tipo semántico de la sección</span>
