@@ -5,13 +5,41 @@
 }
 
 :root {
-  --bg-deep: #1a1210;
-  --bg-card: #2a1f1c;
-  --accent: #c9a227;
-  --accent-soft: rgba(201, 162, 39, 0.15);
-  --text: #f4ebe4;
-  --text-muted: #a8988c;
-  --border: rgba(244, 235, 228, 0.08);
+  /* Fondos: profundidad con matiz frío/cálido mixto */
+  --bg-deep: #121018;
+  --bg-mid: #1a1622;
+  --bg-card: #24202c;
+  --bg-elevated: #2e2936;
+  --bg-wash: rgba(126, 184, 162, 0.04);
+
+  /* Acento principal — ámbar (marca / CTAs) */
+  --accent: #d4a84b;
+  --accent-bright: #e8c56a;
+  --accent-soft: rgba(212, 168, 75, 0.16);
+
+  /* Acento secundario — salvia (orígenes, naturaleza) */
+  --accent-sage: #7eb8a2;
+  --accent-sage-soft: rgba(126, 184, 162, 0.16);
+
+  /* Acento terciario — rosa vino (notas, degustación) */
+  --accent-wine: #c47a8a;
+  --accent-wine-soft: rgba(196, 122, 138, 0.16);
+
+  /* Acento informativo — azul pizarra (datos, tablas) */
+  --accent-slate: #7a9fc4;
+  --accent-slate-soft: rgba(122, 159, 196, 0.16);
+
+  /* Texto y bordes */
+  --text: #f3efe9;
+  --text-muted: #a89f96;
+  --text-faint: rgba(243, 239, 233, 0.45);
+  --border: rgba(243, 239, 233, 0.1);
+  --border-strong: rgba(243, 239, 233, 0.18);
+
+  /* Sombras */
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.32);
+
   font-family: "Outfit", system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -25,6 +53,12 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background:
+    radial-gradient(ellipse 90% 55% at 8% -10%, rgba(212, 168, 75, 0.11), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 96% 8%, rgba(126, 184, 162, 0.09), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(196, 122, 138, 0.07), transparent 55%),
+    var(--bg-deep);
+  background-attachment: fixed;
 }
 
 #root {

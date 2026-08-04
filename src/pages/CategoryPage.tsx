@@ -373,12 +373,21 @@ function DataTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
 }
 
 function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?: boolean }) {
-  const renderField = (label: string, value?: string, isReference = false) =>
+  const renderField = (label: string, value?: string, tone: "default" | "sage" | "wine" | "slate" | "ref" = "default") =>
     value ? (
-      <p className={isReference ? "classification-card__reference" : "classification-card__text"}>
-        <strong>{label}: </strong>
-        <GlossaryText text={value} />
-      </p>
+      tone === "ref" ? (
+        <p className="classification-card__reference">
+          <strong>{label}: </strong>
+          <GlossaryText text={value} />
+        </p>
+      ) : (
+        <div className={`info-field info-field--${tone}`}>
+          <dt>{label}</dt>
+          <dd>
+            <GlossaryText text={value} />
+          </dd>
+        </div>
+      )
     ) : null;
 
   return (
@@ -386,7 +395,7 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
       {showTitle ? <h3 className="detail__subheading">{table.title}</h3> : null}
       <div className="classification-list">
         {table.rows.map((row) => (
-          <article key={row.id} className="classification-card">
+          <article key={row.id} className="classification-card classification-card--rich">
             {row.imageUrl ? (
               <ZoomableCoverImg
                 className="classification-card__image classification-card__image--zoomable"
@@ -396,27 +405,29 @@ function CardTable({ table, showTitle = true }: { table: GuideTable; showTitle?:
               />
             ) : null}
             <h3 className="classification-card__title">{row.term}</h3>
-            {renderField("Ageing / Maturation", row.ageingMaturation)}
-            {renderField("Distillation Method", row.distillationMethod)}
-            {renderField("Perfil / Caracter", row.profileCharacter)}
-            {renderField("Body", row.body)}
-            {renderField("Intensidad", row.intensity)}
-            {renderField("Bitterness (IBU)", row.bitternessIbu)}
-            {renderField("Description", row.description)}
-            {renderField("Descripción 2", row.description2)}
-            {renderField("Maridaje", row.maridaje)}
-            {renderField("Notas", row.notes)}
-            {renderField("Finish", row.finish)}
-            {renderField("Region / Origin", row.regionOrigin)}
-            {renderField("Visual / Color", row.visualColor)}
-            {renderField("Tannins", row.tannins)}
-            {renderField("Acidity", row.acidity)}
-            {renderField("Composicion", row.composition)}
-            {renderField("Objetivo", row.objective)}
-            {renderField("Categoria", row.category)}
-            {renderField("ABV", row.abv)}
-            {renderField("Reference", row.reference, true)}
-            {renderField("Ejemplos", row.examples, true)}
+            <dl className="info-field-grid">
+              {renderField("Ageing / Maturation", row.ageingMaturation, "sage")}
+              {renderField("Distillation Method", row.distillationMethod, "slate")}
+              {renderField("Perfil / Caracter", row.profileCharacter, "wine")}
+              {renderField("Body", row.body)}
+              {renderField("Intensidad", row.intensity, "wine")}
+              {renderField("Bitterness (IBU)", row.bitternessIbu, "slate")}
+              {renderField("Description", row.description)}
+              {renderField("Descripción 2", row.description2)}
+              {renderField("Maridaje", row.maridaje, "sage")}
+              {renderField("Notas", row.notes, "wine")}
+              {renderField("Finish", row.finish, "wine")}
+              {renderField("Region / Origin", row.regionOrigin, "sage")}
+              {renderField("Visual / Color", row.visualColor)}
+              {renderField("Tannins", row.tannins, "wine")}
+              {renderField("Acidity", row.acidity, "slate")}
+              {renderField("Composicion", row.composition, "sage")}
+              {renderField("Objetivo", row.objective)}
+              {renderField("Categoria", row.category)}
+              {renderField("ABV", row.abv, "slate")}
+            </dl>
+            {renderField("Reference", row.reference, "ref")}
+            {renderField("Ejemplos", row.examples, "ref")}
           </article>
         ))}
       </div>
