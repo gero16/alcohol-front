@@ -2192,10 +2192,92 @@
   border-color: rgba(201, 162, 39, 0.25);
 }
 
+.admin-nested--table {
+  border-color: rgba(122, 159, 196, 0.35);
+  background: linear-gradient(180deg, rgba(122, 159, 196, 0.12), rgba(122, 159, 196, 0.04));
+  box-shadow: inset 3px 0 0 var(--accent-slate);
+}
+
+.admin-nested--table[open] {
+  border-color: rgba(122, 159, 196, 0.55);
+  background: linear-gradient(180deg, rgba(122, 159, 196, 0.16), rgba(36, 32, 44, 0.55));
+}
+
+.admin-nested--table > .admin-nested__summary {
+  background: rgba(122, 159, 196, 0.08);
+}
+
+.admin-nested--table > .admin-nested__summary:hover {
+  background: rgba(122, 159, 196, 0.14);
+}
+
+.admin-nested--table > .admin-nested__summary span {
+  color: #d7e4f2;
+}
+
+.admin-nested--table > .admin-nested__summary small {
+  color: var(--accent-slate);
+  font-weight: 600;
+}
+
 .admin-row-card {
   display: grid;
   gap: 0.85rem;
   padding: 1rem;
+}
+
+.admin-row-card--collapsible {
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(126, 184, 162, 0.32);
+  background: linear-gradient(180deg, rgba(126, 184, 162, 0.1), rgba(126, 184, 162, 0.03));
+  box-shadow: inset 3px 0 0 var(--accent-sage);
+}
+
+.admin-row-card--collapsible[open] {
+  border-color: rgba(126, 184, 162, 0.5);
+  background: linear-gradient(180deg, rgba(126, 184, 162, 0.14), rgba(36, 32, 44, 0.5));
+}
+
+.admin-row-card__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  color: #d8ebe3;
+  background: rgba(126, 184, 162, 0.07);
+}
+
+.admin-row-card__summary:hover {
+  background: rgba(126, 184, 162, 0.13);
+}
+
+.admin-row-card__summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-row-card__hint {
+  color: var(--accent-sage);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.admin-row-card__body {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0 1rem 1rem;
+  border-top: 1px solid rgba(126, 184, 162, 0.22);
+}
+
+.admin-nested__summary {
+  list-style: none;
+}
+
+.admin-nested__summary::-webkit-details-marker {
+  display: none;
 }
 
 @media (max-width: 640px) {

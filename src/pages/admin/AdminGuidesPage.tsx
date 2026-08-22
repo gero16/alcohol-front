@@ -1894,10 +1894,13 @@ export default function AdminGuidesPage() {
 
                         <div className="admin-stack">
                           {tab.tables.map((table, tableIndex) => (
-                            <details key={`${table.slug}-${tableIndex}`} className="admin-nested" open>
+                            <details key={`${table.slug}-${tableIndex}`} className="admin-nested admin-nested--table">
                               <summary className="admin-nested__summary">
                                 <span>{table.title.trim() || `Tabla ${tableIndex + 1}`}</span>
-                                <small>{table.slug || "sin-slug"}</small>
+                                <small>
+                                  {table.slug || "sin-slug"} · {table.rows.length}{" "}
+                                  {table.rows.length === 1 ? "fila" : "filas"}
+                                </small>
                               </summary>
                               <div className="admin-nested__body">
                                 <div className="admin-toolbar">
@@ -2148,7 +2151,12 @@ export default function AdminGuidesPage() {
 
                                   <div className="admin-stack">
                                     {table.rows.map((row, rowIndex) => (
-                                      <div key={rowIndex} className="admin-row-card">
+                                      <details key={rowIndex} className="admin-row-card admin-row-card--collapsible">
+                                        <summary className="admin-row-card__summary">
+                                          <strong>{row.term.trim() || `Fila ${rowIndex + 1}`}</strong>
+                                          <span className="admin-row-card__hint">Editar fila</span>
+                                        </summary>
+                                        <div className="admin-row-card__body">
                                         <div className="admin-toolbar">
                                           <strong>Fila {rowIndex + 1}</strong>
                                           <div className="admin-toolbar__spacer" />
@@ -2514,7 +2522,8 @@ export default function AdminGuidesPage() {
                                             />
                                           </label>
                                         </div>
-                                      </div>
+                                        </div>
+                                      </details>
                                     ))}
                                   </div>
                                 </div>
