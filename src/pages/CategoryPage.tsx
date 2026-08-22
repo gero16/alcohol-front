@@ -26,6 +26,34 @@ const CLASSIFICATIONS_TABLE_LOCATION = "__clasificaciones__";
 const SECTION_CONTENT_SUBTITLE_PREFIX = "__subtitle__:";
 const PRODUCTS_TAB_SLUG = "__productos__";
 
+/** Resuelve pestaña sintética a partir de un hash de búsqueda (`section-…` / `table-…`). */
+function findTabSlugForHashTarget(
+  tabs: GuideDetail["tabs"],
+  hashId: string,
+): string | null {
+  if (!hashId) {
+    return null;
+  }
+
+  if (hashId.startsWith("section-")) {
+    const sectionSlug = hashId.slice("section-".length);
+    const bySynthetic = tabs.find((tab) => tab.slug.endsWith(`__sec__${sectionSlug}`));
+    if (bySynthetic) {
+      return bySynthetic.slug;
+    }
+    const byContent = tabs.find((tab) => tab.sections.some((section) => section.slug === sectionSlug));
+    return byContent?.slug ?? null;
+  }
+
+  if (hashId.startsWith("table-")) {
+    const tableSlug = hashId.slice("table-".length);
+    const byContent = tabs.find((tab) => tab.tables.some((table) => table.slug === tableSlug));
+    return byContent?.slug ?? null;
+  }
+
+  return null;
+}
+
 type SectionContentBlock = {
   kind: "subtitle" | "paragraph";
   text: string;
@@ -978,10 +1006,17 @@ export default function CategoryPage() {
       return;
     }
 
-    if (!tabsWithProducts.some((tab) => tab.slug === activeTabSlug)) {
-      setActiveTabSlug(tabsWithProducts[0].slug);
+    const hashId = location.hash ? decodeURIComponent(location.hash.slice(1)) : "";
+    const tabFromHash = findTabSlugForHashTarget(tabsWithProducts, hashId);
+    if (tabFromHash) {
+      setActiveTabSlug(tabFromHash);
+      return;
     }
-  }, [activeTabSlug, tabFromQuery, tabsWithProducts]);
+
+    setActiveTabSlug((current) =>
+      tabsWithProducts.some((tab) => tab.slug === current) ? current : tabsWithProducts[0].slug,
+    );
+  }, [tabFromQuery, tabsWithProducts, location.hash]);
 
   useEffect(() => {
     if (loading || !location.hash) {
@@ -993,12 +1028,23 @@ export default function CategoryPage() {
       return;
     }
 
-    requestAnimationFrame(() => {
-      document.getElementById(targetId)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
+    let attempts = 0;
+    let rafId = 0;
+
+    const tryScroll = () => {
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 12) {
+        rafId = requestAnimationFrame(tryScroll);
+      }
+    };
+
+    rafId = requestAnimationFrame(tryScroll);
+    return () => cancelAnimationFrame(rafId);
   }, [loading, activeTabSlug, id, subId, location.hash]);
 
   if (notFound) {
