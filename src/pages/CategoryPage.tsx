@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { ApiError, getCategoryBySlug, getGuideByCategorySlug, getProducts } from "../api/client";
 import type {
   BodyDensity,
@@ -490,6 +490,7 @@ function GuidePanel({
             return (
             <article
               key={section.id}
+              id={`section-${section.slug}`}
               className={hideSectionHeader ? "classification-card classification-card--plain" : "classification-card"}
               data-section-semantic-key={section.semanticKey?.trim() || undefined}
             >
@@ -545,6 +546,7 @@ function GuidePanel({
         return (
           <div
             key={table.id}
+            id={`table-${table.slug}`}
             className="guide-table-semantic-wrap"
             data-table-semantic-key={table.semanticKey?.trim() || undefined}
           >
@@ -811,6 +813,9 @@ function ProductsSection({ products, title }: { products: Product[]; title: stri
 
 export default function CategoryPage() {
   const { id, subId } = useParams<{ id: string; subId?: string }>();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const tabFromQuery = (searchParams.get("tab") ?? "").trim();
   const [category, setCategory] = useState<Category | null>(null);
   const [guide, setGuide] = useState<GuideDetail | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -964,10 +969,37 @@ export default function CategoryPage() {
   const subcategoryDetailUsesTabs = Boolean(selectedSubcategory) && tabsWithProducts.length > 1;
 
   useEffect(() => {
-    if (tabsWithProducts.length > 0 && !tabsWithProducts.some((tab) => tab.slug === activeTabSlug)) {
+    if (tabsWithProducts.length === 0) {
+      return;
+    }
+
+    if (tabFromQuery && tabsWithProducts.some((tab) => tab.slug === tabFromQuery)) {
+      setActiveTabSlug(tabFromQuery);
+      return;
+    }
+
+    if (!tabsWithProducts.some((tab) => tab.slug === activeTabSlug)) {
       setActiveTabSlug(tabsWithProducts[0].slug);
     }
-  }, [activeTabSlug, tabsWithProducts]);
+  }, [activeTabSlug, tabFromQuery, tabsWithProducts]);
+
+  useEffect(() => {
+    if (loading || !location.hash) {
+      return;
+    }
+
+    const targetId = decodeURIComponent(location.hash.slice(1));
+    if (!targetId) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [loading, activeTabSlug, id, subId, location.hash]);
 
   if (notFound) {
     return <Navigate to="/404" replace />;

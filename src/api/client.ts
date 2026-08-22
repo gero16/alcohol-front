@@ -10,6 +10,7 @@ import type {
   GuideSummary,
   Product,
   ProductInput,
+  SearchResponse,
 } from "./types";
 
 /**
@@ -243,4 +244,9 @@ export async function deleteProduct(slug: string): Promise<void> {
   await requestJson<void>(`/products/${slug}`, {
     method: "DELETE",
   });
+}
+
+export async function searchSite(query: string): Promise<SearchResponse> {
+  const params = new URLSearchParams({ q: query });
+  return requestJson<SearchResponse>(`/search?${params.toString()}`);
 }

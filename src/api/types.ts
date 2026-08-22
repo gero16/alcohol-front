@@ -357,3 +357,19 @@ export type GlossaryInput = {
   relatedCategories: string[];
   featured?: boolean;
 };
+
+export type SearchResultKind = "category" | "guide" | "glossary" | "product";
+
+export type SearchResult = {
+  id: string;
+  kind: SearchResultKind;
+  title: string;
+  snippet: string;
+  href: string;
+  breadcrumb: string;
+};
+
+export type SearchResponse = {
+  query: string;
+  results: SearchResult[];
+};

@@ -8,6 +8,7 @@ const HomePage = lazy(() => import("./pages/HomePage"));
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 const GlossaryPage = lazy(() => import("./pages/GlossaryPage"));
 const ResponsiblePage = lazy(() => import("./pages/ResponsiblePage"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const AdminHomePage = lazy(() => import("./pages/admin/AdminHomePage"));
 const AdminCategoriesPage = lazy(() => import("./pages/admin/AdminCategoriesPage"));
@@ -29,6 +30,7 @@ function App() {
         </Route>
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="buscar" element={<SearchPage />} />
           <Route path="glosario" element={<GlossaryPage />} />
           <Route path="categoria/:id" element={<CategoryPage />} />
           <Route path="categoria/:id/:subId" element={<CategoryPage />} />

@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getCategories, getGuideByCategorySlug } from "../api/client";
 import { getGuideNavItems } from "../guideNav";
 import { ImageLightboxProvider } from "./ImageLightbox";
@@ -112,12 +112,43 @@ export default function Layout() {
     setExpandedCategorySlug(null);
   }
 
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const next = searchQuery.trim();
+    if (!next) {
+      navigate("/buscar");
+      return;
+    }
+    navigate(`/buscar?q=${encodeURIComponent(next)}`);
+    setIsMobileMenuOpen(false);
+  }
+
   return (
     <div className="layout">
       <nav className="nav" aria-label="Principal">
         <NavLink to="/" className="nav__brand" end onClick={handleNavLinkClick}>
           Alcoholes
         </NavLink>
+        <form className="nav__search" onSubmit={handleSearchSubmit} role="search">
+          <label className="visually-hidden" htmlFor="nav-search-input">
+            Buscar en la guía
+          </label>
+          <input
+            id="nav-search-input"
+            className="nav__search-input"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Buscar… (ej. demi sec)"
+            autoComplete="off"
+          />
+          <button type="submit" className="nav__search-submit">
+            Buscar
+          </button>
+        </form>
         <button
           type="button"
           className="nav__menu-button"
@@ -217,6 +248,11 @@ export default function Layout() {
                   </li>
                 );
               })}
+              <li className="nav__item">
+                <NavLink to="/buscar" className="nav__link" onClick={handleNavLinkClick}>
+                  Buscar
+                </NavLink>
+              </li>
               <li className="nav__item">
                 <NavLink to="/glosario" className="nav__link" onClick={handleNavLinkClick}>
                   Glosario
