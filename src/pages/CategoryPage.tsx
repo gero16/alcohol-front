@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { ApiError, getCategoryBySlug, getGuideByCategorySlug, getProducts } from "../api/client";
 import type {
@@ -348,6 +348,61 @@ function buildAperitifSubcategoryViewTabs(tab: GuideDetail["tabs"][number]): Gui
   return [...sectionTabs, ...classificationTabs, ...extraTabs];
 }
 
+function CollapsibleGuideTable({
+  table,
+  children,
+}: {
+  table: GuideTable;
+  children: ReactNode;
+}) {
+  const location = useLocation();
+  const hashId = location.hash ? decodeURIComponent(location.hash.slice(1)) : "";
+  const hashTargetsThis = hashId === `table-${table.slug}`;
+  const [open, setOpen] = useState(hashTargetsThis);
+
+  useEffect(() => {
+    if (hashTargetsThis) {
+      setOpen(true);
+    }
+  }, [hashTargetsThis]);
+
+  const rowCount = table.rows.length;
+  const headerId = `table-head-${table.slug}`;
+  const panelId = `table-panel-${table.slug}`;
+
+  return (
+    <div
+      id={`table-${table.slug}`}
+      className={`guide-table-collapse${open ? " guide-table-collapse--open" : ""}`}
+      data-table-semantic-key={table.semanticKey?.trim() || undefined}
+    >
+      <button
+        type="button"
+        id={headerId}
+        className="guide-table-collapse__header"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="guide-table-collapse__title">{table.title}</span>
+        <span className="guide-table-collapse__meta">
+          {rowCount} {rowCount === 1 ? "fila" : "filas"}
+        </span>
+        <span className="guide-table-collapse__chevron" aria-hidden />
+      </button>
+      <div
+        id={panelId}
+        role="region"
+        aria-labelledby={headerId}
+        className={`guide-table-collapse__body${open ? " guide-table-collapse__body--open" : ""}`}
+        hidden={!open}
+      >
+        {open ? children : null}
+      </div>
+    </div>
+  );
+}
+
 function getRowValue(row: GuideTableRow, column: GuideTableColumn): string {
   const value = row[column.key];
   return typeof value === "string" && value.length > 0 ? value : "Sin dato";
@@ -568,22 +623,16 @@ function GuidePanel({
       ) : null}
 
       {activeTab.tables.map((table) => {
-        const showTitle = table.title !== activeTab.panelTitle;
         const shouldRenderAsTableWithThumbs = table.rows.some((row) => Boolean(row.imageUrl?.trim()));
 
         return (
-          <div
-            key={table.id}
-            id={`table-${table.slug}`}
-            className="guide-table-semantic-wrap"
-            data-table-semantic-key={table.semanticKey?.trim() || undefined}
-          >
+          <CollapsibleGuideTable key={table.id} table={table}>
             {table.displayMode === "cards" && !shouldRenderAsTableWithThumbs ? (
-              <CardTable table={table} showTitle={showTitle} />
+              <CardTable table={table} showTitle={false} />
             ) : (
-              <DataTable table={table} showTitle={showTitle} />
+              <DataTable table={table} showTitle={false} />
             )}
-          </div>
+          </CollapsibleGuideTable>
         );
       })}
 
