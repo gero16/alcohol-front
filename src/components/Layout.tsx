@@ -61,37 +61,29 @@ export default function Layout() {
     void (async () => {
       try {
         const nextCategories = await getCategories();
+        if (!active) {
+          return;
+        }
+
+        setCategories(nextCategories);
+
+        const guideEntries = await Promise.all(
+          nextCategories.map(async (category) => {
+            try {
+              const guide = await getGuideByCategorySlug(category.slug);
+              return [category.slug, getNavSubcategories(guide)] as const;
+            } catch {
+              return [category.slug, []] as const;
+            }
+          }),
+        );
+
         if (active) {
-          setCategories(nextCategories);
+          setGuideNavByCategory(Object.fromEntries(guideEntries));
         }
       } catch {
         if (active) {
           setCategories([]);
-        }
-      }
-    })();
-
-    void (async () => {
-      try {
-        const [distillateGuide, wineGuide, beerGuide, aperitifGuide, liqueurGuide] = await Promise.all([
-          getGuideByCategorySlug("destilados"),
-          getGuideByCategorySlug("vino"),
-          getGuideByCategorySlug("cerveza"),
-          getGuideByCategorySlug("aperitivos"),
-          getGuideByCategorySlug("licores"),
-        ]);
-
-        if (active) {
-          setGuideNavByCategory({
-            destilados: getNavSubcategories(distillateGuide),
-            vino: getNavSubcategories(wineGuide),
-            cerveza: getNavSubcategories(beerGuide),
-            aperitivos: getNavSubcategories(aperitifGuide),
-            licores: getNavSubcategories(liqueurGuide),
-          });
-        }
-      } catch {
-        if (active) {
           setGuideNavByCategory({});
         }
       }
